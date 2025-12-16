@@ -199,6 +199,8 @@ export default function DashboardScreen() {
         onClose={handleCloseModal}
         shoppingList={shoppingList}
         loading={generatingList}
+        userId={user?.id || null}
+        onUpdate={() => setShoppingList(shoppingList)}
       />
     </ScreenWrapper>
   );

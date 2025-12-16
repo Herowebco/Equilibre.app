@@ -30,9 +30,14 @@ export interface MealPlan {
   days: Day[];
 }
 
+export interface ShoppingItem {
+  name: string;
+  checked: boolean;
+}
+
 export interface ShoppingCategory {
   name: string;
-  items: string[];
+  items: ShoppingItem[];
 }
 
 export interface ShoppingList {
@@ -139,5 +144,24 @@ export async function generateShoppingList(planData: MealPlan, userId: string): 
       throw error;
     }
     throw new Error('An unexpected error occurred while generating the shopping list');
+  }
+}
+
+export async function updateShoppingListItems(userId: string, shoppingList: ShoppingList): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('meal_plans')
+      .update({ shopping_list: shoppingList })
+      .eq('user_id', userId)
+      .eq('status', 'active');
+
+    if (error) {
+      throw new Error(error.message || 'Failed to update shopping list');
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while updating the shopping list');
   }
 }

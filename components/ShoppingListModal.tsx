@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,35 +11,53 @@ import {
 import { X, Check, Square } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 import type { ShoppingList } from '@/services/ai';
+import { updateShoppingListItems } from '@/services/ai';
 
 interface ShoppingListModalProps {
   visible: boolean;
   onClose: () => void;
   shoppingList: ShoppingList | null;
   loading: boolean;
+  userId: string | null;
+  onUpdate?: () => void;
 }
 
 export function ShoppingListModal({
   visible,
   onClose,
-  shoppingList,
+  shoppingList: initialShoppingList,
   loading,
+  userId,
+  onUpdate,
 }: ShoppingListModalProps) {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
+  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(initialShoppingList);
 
-  const toggleItem = (categoryIndex: number, itemIndex: number) => {
-    const key = `${categoryIndex}-${itemIndex}`;
-    const newChecked = new Set(checkedItems);
-    if (newChecked.has(key)) {
-      newChecked.delete(key);
-    } else {
-      newChecked.add(key);
+  useEffect(() => {
+    setShoppingList(initialShoppingList);
+  }, [initialShoppingList]);
+
+  const toggleItem = async (categoryIndex: number, itemIndex: number) => {
+    if (!shoppingList || !userId) return;
+
+    const newShoppingList = { ...shoppingList };
+    newShoppingList.categories = [...shoppingList.categories];
+    newShoppingList.categories[categoryIndex] = {
+      ...shoppingList.categories[categoryIndex],
+      items: [...shoppingList.categories[categoryIndex].items],
+    };
+    newShoppingList.categories[categoryIndex].items[itemIndex] = {
+      ...shoppingList.categories[categoryIndex].items[itemIndex],
+      checked: !shoppingList.categories[categoryIndex].items[itemIndex].checked,
+    };
+
+    setShoppingList(newShoppingList);
+
+    try {
+      await updateShoppingListItems(userId, newShoppingList);
+      onUpdate?.();
+    } catch (error) {
+      console.error('Error updating shopping list:', error);
     }
-    setCheckedItems(newChecked);
-  };
-
-  const isItemChecked = (categoryIndex: number, itemIndex: number): boolean => {
-    return checkedItems.has(`${categoryIndex}-${itemIndex}`);
   };
 
   return (
@@ -67,32 +85,29 @@ export function ShoppingListModal({
             {shoppingList.categories.map((category, categoryIndex) => (
               <View key={categoryIndex} style={styles.category}>
                 <Text style={styles.categoryName}>{category.name}</Text>
-                {category.items.map((item, itemIndex) => {
-                  const checked = isItemChecked(categoryIndex, itemIndex);
-                  return (
-                    <TouchableOpacity
-                      key={itemIndex}
-                      style={styles.itemRow}
-                      onPress={() => toggleItem(categoryIndex, itemIndex)}
+                {category.items.map((item, itemIndex) => (
+                  <TouchableOpacity
+                    key={itemIndex}
+                    style={styles.itemRow}
+                    onPress={() => toggleItem(categoryIndex, itemIndex)}
+                  >
+                    <View style={styles.checkbox}>
+                      {item.checked ? (
+                        <Check size={20} color={Colors.primary} strokeWidth={3} />
+                      ) : (
+                        <Square size={20} color={Colors.text.secondary} />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.itemText,
+                        item.checked && styles.itemTextChecked,
+                      ]}
                     >
-                      <View style={styles.checkbox}>
-                        {checked ? (
-                          <Check size={20} color={Colors.primary} strokeWidth={3} />
-                        ) : (
-                          <Square size={20} color={Colors.text.secondary} />
-                        )}
-                      </View>
-                      <Text
-                        style={[
-                          styles.itemText,
-                          checked && styles.itemTextChecked,
-                        ]}
-                      >
-                        {item}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             ))}
             <View style={styles.bottomSpacer} />

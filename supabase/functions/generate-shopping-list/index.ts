@@ -84,11 +84,17 @@ Deno.serve(async (req: Request) => {
         "categories": [
           {
             "name": "Fruits & Légumes",
-            "items": ["Tomates (500g)", "Salade (1 pièce)"]
+            "items": [
+              {"name": "Tomates (500g)", "checked": false},
+              {"name": "Salade (1 pièce)", "checked": false}
+            ]
           },
           {
             "name": "Boucherie & Poissonnerie",
-            "items": ["Poulet (400g)", "Saumon (300g)"]
+            "items": [
+              {"name": "Poulet (400g)", "checked": false},
+              {"name": "Saumon (300g)", "checked": false}
+            ]
           }
         ]
       }

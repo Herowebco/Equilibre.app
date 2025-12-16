@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,14 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper, Card, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { ShoppingCart, Check, Square, RefreshCw } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, ShoppingList } from '@/services/ai';
-import { generateShoppingList } from '@/services/ai';
+import { generateShoppingList, updateShoppingListItems } from '@/services/ai';
 
 export default function GroceriesScreen() {
   const { user } = useAuth();
@@ -22,11 +23,12 @@ export default function GroceriesScreen() {
   const [generating, setGenerating] = useState(false);
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    loadShoppingList();
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      loadShoppingList();
+    }, [user])
+  );
 
   const loadShoppingList = async () => {
     if (!user) return;
@@ -71,19 +73,27 @@ export default function GroceriesScreen() {
     }
   };
 
-  const toggleItem = (categoryIndex: number, itemIndex: number) => {
-    const key = `${categoryIndex}-${itemIndex}`;
-    const newChecked = new Set(checkedItems);
-    if (newChecked.has(key)) {
-      newChecked.delete(key);
-    } else {
-      newChecked.add(key);
-    }
-    setCheckedItems(newChecked);
-  };
+  const toggleItem = async (categoryIndex: number, itemIndex: number) => {
+    if (!shoppingList || !user) return;
 
-  const isItemChecked = (categoryIndex: number, itemIndex: number): boolean => {
-    return checkedItems.has(`${categoryIndex}-${itemIndex}`);
+    const newShoppingList = { ...shoppingList };
+    newShoppingList.categories = [...shoppingList.categories];
+    newShoppingList.categories[categoryIndex] = {
+      ...shoppingList.categories[categoryIndex],
+      items: [...shoppingList.categories[categoryIndex].items],
+    };
+    newShoppingList.categories[categoryIndex].items[itemIndex] = {
+      ...shoppingList.categories[categoryIndex].items[itemIndex],
+      checked: !shoppingList.categories[categoryIndex].items[itemIndex].checked,
+    };
+
+    setShoppingList(newShoppingList);
+
+    try {
+      await updateShoppingListItems(user.id, newShoppingList);
+    } catch (error) {
+      console.error('Error updating shopping list:', error);
+    }
   };
 
   const getTotalItems = (): number => {
@@ -92,7 +102,11 @@ export default function GroceriesScreen() {
   };
 
   const getCheckedCount = (): number => {
-    return checkedItems.size;
+    if (!shoppingList?.categories) return 0;
+    return shoppingList.categories.reduce(
+      (total, cat) => total + cat.items.filter(item => item.checked).length,
+      0
+    );
   };
 
   if (loading) {
@@ -181,32 +195,29 @@ export default function GroceriesScreen() {
           {shoppingList?.categories?.map((category, categoryIndex) => (
             <Card key={categoryIndex} style={styles.categoryCard}>
               <Text style={styles.categoryName}>{category.name}</Text>
-              {category.items.map((item, itemIndex) => {
-                const checked = isItemChecked(categoryIndex, itemIndex);
-                return (
-                  <TouchableOpacity
-                    key={itemIndex}
-                    style={styles.itemRow}
-                    onPress={() => toggleItem(categoryIndex, itemIndex)}
+              {category.items.map((item, itemIndex) => (
+                <TouchableOpacity
+                  key={itemIndex}
+                  style={styles.itemRow}
+                  onPress={() => toggleItem(categoryIndex, itemIndex)}
+                >
+                  <View style={styles.checkbox}>
+                    {item.checked ? (
+                      <Check size={20} color={Colors.primary} strokeWidth={3} />
+                    ) : (
+                      <Square size={20} color={Colors.text.secondary} />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.itemText,
+                      item.checked && styles.itemTextChecked,
+                    ]}
                   >
-                    <View style={styles.checkbox}>
-                      {checked ? (
-                        <Check size={20} color={Colors.primary} strokeWidth={3} />
-                      ) : (
-                        <Square size={20} color={Colors.text.secondary} />
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.itemText,
-                        checked && styles.itemTextChecked,
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                    {item.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </Card>
           ))}
         </ScrollView>
