@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,9 +16,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
-    const { currentMeal, diet, allergies, mealType } = await req.json();
+    const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+    const { currentMeal, diet, allergies, mealType, user_id } = await req.json();
 
     const finalDiet = diet || "standard";
     const finalAllergies = allergies || [];
@@ -60,6 +65,20 @@ Deno.serve(async (req: Request) => {
     const newMeal = JSON.parse(text);
 
     console.log(`✅ Nouveau repas généré: ${newMeal.name}`);
+
+    if (user_id) {
+      const { error: updateError } = await supabase
+        .from("meal_plans")
+        .update({ shopping_list: null })
+        .eq("user_id", user_id)
+        .eq("status", "active");
+
+      if (updateError) {
+        console.error("Erreur suppression cache liste:", updateError);
+      } else {
+        console.log("🗑️ Cache liste de courses supprimé");
+      }
+    }
 
     return new Response(JSON.stringify(newMeal), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

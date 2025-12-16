@@ -5,37 +5,37 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
-  FlatList,
+  ScrollView,
+  Alert,
 } from 'react-native';
 import { ScreenWrapper, Card, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { ShoppingCart, Check, Square } from 'lucide-react-native';
+import { ShoppingCart, Check, Square, RefreshCw } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import type { MealPlan } from '@/services/ai';
-
-interface GroceryItem {
-  name: string;
-  checked: boolean;
-}
+import type { MealPlan, ShoppingList } from '@/services/ai';
+import { generateShoppingList } from '@/services/ai';
 
 export default function GroceriesScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [groceries, setGroceries] = useState<GroceryItem[]>([]);
+  const [generating, setGenerating] = useState(false);
+  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
+  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadGroceries();
+    loadShoppingList();
   }, [user]);
 
-  const loadGroceries = async () => {
+  const loadShoppingList = async () => {
     if (!user) return;
 
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('meal_plans')
-        .select('plan_data')
+        .select('plan_data, shopping_list')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -45,77 +45,55 @@ export default function GroceriesScreen() {
       if (error) throw error;
 
       if (data) {
-        const mealPlan = data.plan_data as MealPlan;
-        const ingredients = extractIngredients(mealPlan);
-        setGroceries(ingredients);
+        setCurrentPlan(data.plan_data as MealPlan);
+        if (data.shopping_list) {
+          setShoppingList(data.shopping_list as ShoppingList);
+        }
       }
     } catch (error) {
-      console.error('Error loading groceries:', error);
+      console.error('Error loading shopping list:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const extractIngredients = (plan: MealPlan): GroceryItem[] => {
-    if (!plan?.days || plan.days.length === 0) return [];
+  const handleGenerateList = async () => {
+    if (!currentPlan || !user) return;
 
-    const ingredientsSet = new Set<string>();
-
-    plan.days.forEach((day) => {
-      if (day?.meals && Array.isArray(day.meals)) {
-        day.meals.forEach((meal) => {
-          if (meal?.ingredients && Array.isArray(meal.ingredients)) {
-            meal.ingredients.forEach((ingredient) => {
-              if (ingredient && typeof ingredient === 'string') {
-                ingredientsSet.add(ingredient.trim());
-              }
-            });
-          }
-        });
-      }
-    });
-
-    return Array.from(ingredientsSet)
-      .sort()
-      .map((name) => ({ name, checked: false }));
+    try {
+      setGenerating(true);
+      const list = await generateShoppingList(currentPlan, user.id);
+      setShoppingList(list);
+    } catch (error: any) {
+      Alert.alert('Erreur', error.message || 'Impossible de générer la liste de courses');
+    } finally {
+      setGenerating(false);
+    }
   };
 
-  const toggleItem = (index: number) => {
-    setGroceries((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, checked: !item.checked } : item))
-    );
+  const toggleItem = (categoryIndex: number, itemIndex: number) => {
+    const key = `${categoryIndex}-${itemIndex}`;
+    const newChecked = new Set(checkedItems);
+    if (newChecked.has(key)) {
+      newChecked.delete(key);
+    } else {
+      newChecked.add(key);
+    }
+    setCheckedItems(newChecked);
   };
 
-  const toggleAll = () => {
-    const allChecked = groceries.every((item) => item.checked);
-    setGroceries((prev) =>
-      prev.map((item) => ({ ...item, checked: !allChecked }))
-    );
+  const isItemChecked = (categoryIndex: number, itemIndex: number): boolean => {
+    return checkedItems.has(`${categoryIndex}-${itemIndex}`);
   };
 
-  const renderItem = ({ item, index }: { item: GroceryItem; index: number }) => (
-    <TouchableOpacity
-      style={styles.itemContainer}
-      onPress={() => toggleItem(index)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.checkbox}>
-        {item.checked ? (
-          <Check size={20} color={Colors.primary} strokeWidth={3} />
-        ) : (
-          <Square size={20} color={Colors.text.light} strokeWidth={2} />
-        )}
-      </View>
-      <Text
-        style={[
-          styles.itemText,
-          item.checked && styles.itemTextChecked,
-        ]}
-      >
-        {item.name}
-      </Text>
-    </TouchableOpacity>
-  );
+  const getTotalItems = (): number => {
+    if (!shoppingList?.categories) return 0;
+    return shoppingList.categories.reduce((total, cat) => total + cat.items.length, 0);
+  };
+
+  const getCheckedCount = (): number => {
+    return checkedItems.size;
+  };
 
   if (loading) {
     return (
@@ -128,19 +106,15 @@ export default function GroceriesScreen() {
     );
   }
 
-  if (groceries.length === 0) {
+  if (!currentPlan) {
     return (
       <ScreenWrapper>
         <View style={styles.container}>
           <Text style={styles.title}>Liste de courses</Text>
-          <Text style={styles.subtitle}>
-            Vos ingrédients pour la semaine
-          </Text>
-
           <View style={styles.emptyContainer}>
             <ShoppingCart size={64} color={Colors.text.light} />
             <Text style={styles.emptyText}>
-              Votre liste de courses apparaîtra ici une fois votre plan généré.
+              Créez d'abord un plan de repas pour générer votre liste de courses.
             </Text>
           </View>
         </View>
@@ -148,8 +122,41 @@ export default function GroceriesScreen() {
     );
   }
 
-  const checkedCount = groceries.filter((item) => item.checked).length;
-  const allChecked = groceries.every((item) => item.checked);
+  if (!shoppingList && !generating) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.container}>
+          <Text style={styles.title}>Liste de courses</Text>
+          <View style={styles.emptyContainer}>
+            <ShoppingCart size={64} color={Colors.primary} />
+            <Text style={styles.emptyText}>
+              Générez votre liste de courses consolidée et organisée par rayon.
+            </Text>
+            <Button
+              title="Générer la liste"
+              onPress={handleGenerateList}
+              style={styles.generateButton}
+              icon={<ShoppingCart size={20} color="#fff" />}
+            />
+          </View>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
+  if (generating) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Création de votre liste...</Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
+  const totalItems = getTotalItems();
+  const checkedCount = getCheckedCount();
 
   return (
     <ScreenWrapper>
@@ -158,26 +165,51 @@ export default function GroceriesScreen() {
           <View>
             <Text style={styles.title}>Liste de courses</Text>
             <Text style={styles.subtitle}>
-              {checkedCount} / {groceries.length} articles cochés
+              {checkedCount} / {totalItems} articles cochés
             </Text>
           </View>
-          <Button
-            title={allChecked ? 'Tout décocher' : 'Tout cocher'}
-            onPress={toggleAll}
-            variant="outline"
-            style={styles.toggleButton}
-          />
+          <TouchableOpacity
+            onPress={handleGenerateList}
+            style={styles.refreshButton}
+            disabled={generating}
+          >
+            <RefreshCw size={24} color={Colors.primary} />
+          </TouchableOpacity>
         </View>
 
-        <Card style={styles.listCard}>
-          <FlatList
-            data={groceries}
-            renderItem={renderItem}
-            keyExtractor={(item, index) => `${item.name}-${index}`}
-            showsVerticalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-          />
-        </Card>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {shoppingList?.categories?.map((category, categoryIndex) => (
+            <Card key={categoryIndex} style={styles.categoryCard}>
+              <Text style={styles.categoryName}>{category.name}</Text>
+              {category.items.map((item, itemIndex) => {
+                const checked = isItemChecked(categoryIndex, itemIndex);
+                return (
+                  <TouchableOpacity
+                    key={itemIndex}
+                    style={styles.itemRow}
+                    onPress={() => toggleItem(categoryIndex, itemIndex)}
+                  >
+                    <View style={styles.checkbox}>
+                      {checked ? (
+                        <Check size={20} color={Colors.primary} strokeWidth={3} />
+                      ) : (
+                        <Square size={20} color={Colors.text.secondary} />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        styles.itemText,
+                        checked && styles.itemTextChecked,
+                      ]}
+                    >
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </Card>
+          ))}
+        </ScrollView>
       </View>
     </ScreenWrapper>
   );
@@ -215,17 +247,26 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
   },
-  toggleButton: {
-    paddingHorizontal: Theme.spacing.md,
+  refreshButton: {
+    padding: Theme.spacing.sm,
   },
-  listCard: {
+  scrollView: {
     flex: 1,
-    padding: Theme.spacing.md,
   },
-  itemContainer: {
+  categoryCard: {
+    marginBottom: Theme.spacing.md,
+  },
+  categoryName: {
+    fontSize: Theme.fontSize.lg,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.primary,
+    marginBottom: Theme.spacing.md,
+  },
+  itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.xs,
   },
   checkbox: {
     width: 24,
@@ -235,18 +276,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   itemText: {
-    flex: 1,
     fontSize: Theme.fontSize.md,
     color: Colors.text.primary,
+    flex: 1,
   },
   itemTextChecked: {
-    color: Colors.text.light,
+    color: Colors.text.secondary,
     textDecorationLine: 'line-through',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: Theme.spacing.xs,
   },
   emptyContainer: {
     flex: 1,
@@ -259,6 +295,10 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     textAlign: 'center',
     marginTop: Theme.spacing.lg,
+    marginBottom: Theme.spacing.xl,
     lineHeight: 22,
+  },
+  generateButton: {
+    minWidth: 200,
   },
 });

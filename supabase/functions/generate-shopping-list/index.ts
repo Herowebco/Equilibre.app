@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,12 +16,41 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const apiKey = Deno.env.get("GEMINI_API_KEY");
 
-    const { planData } = await req.json();
+    const supabase = createClient(supabaseUrl!, supabaseKey!);
+
+    const { planData, user_id } = await req.json();
 
     if (!planData || !planData.days) {
       throw new Error("Plan de repas invalide");
+    }
+
+    if (!user_id) {
+      throw new Error("User ID requis");
+    }
+
+    const { data: existingPlan, error: fetchError } = await supabase
+      .from("meal_plans")
+      .select("shopping_list, id")
+      .eq("user_id", user_id)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error("Erreur récupération plan:", fetchError);
+    }
+
+    if (existingPlan?.shopping_list) {
+      console.log("✅ Liste de courses trouvée en cache");
+      return new Response(JSON.stringify(existingPlan.shopping_list), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     console.log(`🛍 Génération liste de courses pour ${planData.days.length} jours`);
@@ -86,6 +116,19 @@ Deno.serve(async (req: Request) => {
     const shoppingList = JSON.parse(text);
 
     console.log(`✅ Liste générée avec ${shoppingList.categories?.length || 0} catégories`);
+
+    if (existingPlan?.id) {
+      const { error: updateError } = await supabase
+        .from("meal_plans")
+        .update({ shopping_list: shoppingList })
+        .eq("id", existingPlan.id);
+
+      if (updateError) {
+        console.error("Erreur sauvegarde liste:", updateError);
+      } else {
+        console.log("💾 Liste sauvegardée en cache");
+      }
+    }
 
     return new Response(JSON.stringify(shoppingList), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

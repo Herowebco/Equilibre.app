@@ -74,7 +74,8 @@ export async function generateMealPlan(
 
 export async function regenerateMeal(
   currentMeal: Meal,
-  userProfile: UserProfile
+  userProfile: UserProfile,
+  userId?: string
 ): Promise<Meal> {
   try {
     const diet = userProfile.dietary_preferences?.diet_type || 'standard';
@@ -86,6 +87,7 @@ export async function regenerateMeal(
         diet,
         allergies,
         mealType: currentMeal.type,
+        user_id: userId,
       },
     });
 
@@ -110,11 +112,12 @@ export async function regenerateMeal(
   }
 }
 
-export async function generateShoppingList(planData: MealPlan): Promise<ShoppingList> {
+export async function generateShoppingList(planData: MealPlan, userId: string): Promise<ShoppingList> {
   try {
     const { data, error } = await supabase.functions.invoke('generate-shopping-list', {
       body: {
         planData,
+        user_id: userId,
       },
     });
 

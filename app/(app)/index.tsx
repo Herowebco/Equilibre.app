@@ -85,12 +85,12 @@ export default function DashboardScreen() {
   };
 
   const handleGenerateShoppingList = async () => {
-    if (!currentPlan) return;
+    if (!currentPlan || !user) return;
 
     try {
       setGeneratingList(true);
       setShowShoppingModal(true);
-      const list = await generateShoppingList(currentPlan);
+      const list = await generateShoppingList(currentPlan, user.id);
       setShoppingList(list);
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Impossible de générer la liste de courses');
