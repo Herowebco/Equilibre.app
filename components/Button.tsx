@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  View,
 } from 'react-native';
 import { Colors, Theme } from '@/constants';
 
@@ -17,6 +18,7 @@ interface ButtonProps {
   loading?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  icon?: React.ReactNode;
 }
 
 export function Button({
@@ -27,6 +29,7 @@ export function Button({
   loading = false,
   style,
   textStyle,
+  icon,
 }: ButtonProps) {
   const buttonStyle = [
     styles.button,
@@ -57,7 +60,10 @@ export function Button({
           color={variant === 'outline' ? Colors.primary : Colors.white}
         />
       ) : (
-        <Text style={textStyleCombined}>{title}</Text>
+        <View style={styles.content}>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={textStyleCombined}>{title}</Text>
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -71,6 +77,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 48,
+  },
+  content: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconContainer: {
+    marginRight: Theme.spacing.sm,
   },
   primaryButton: {
     backgroundColor: Colors.primary,

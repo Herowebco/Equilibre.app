@@ -30,6 +30,15 @@ export interface MealPlan {
   days: Day[];
 }
 
+export interface ShoppingCategory {
+  name: string;
+  items: string[];
+}
+
+export interface ShoppingList {
+  categories: ShoppingCategory[];
+}
+
 export async function generateMealPlan(
   userProfile: UserProfile,
   userId?: string
@@ -98,5 +107,34 @@ export async function regenerateMeal(
       throw error;
     }
     throw new Error('An unexpected error occurred while regenerating the meal');
+  }
+}
+
+export async function generateShoppingList(planData: MealPlan): Promise<ShoppingList> {
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-shopping-list', {
+      body: {
+        planData,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to generate shopping list');
+    }
+
+    if (!data) {
+      throw new Error('No data received from shopping list generator');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data as ShoppingList;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while generating the shopping list');
   }
 }
