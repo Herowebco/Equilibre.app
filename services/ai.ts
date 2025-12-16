@@ -1,0 +1,64 @@
+import { supabase } from '@/lib/supabase';
+
+export interface UserProfile {
+  gender?: string;
+  age?: number;
+  height?: number;
+  weight?: number;
+  activity_level?: string;
+  goal?: string;
+  dietary_preferences?: {
+    diet_type?: string;
+    allergies?: string[];
+    meals_per_day?: number;
+  };
+}
+
+export interface Meal {
+  type: string;
+  name: string;
+  calories: number;
+  ingredients: string[];
+}
+
+export interface Day {
+  day_number: number;
+  meals: Meal[];
+}
+
+export interface MealPlan {
+  days: Day[];
+}
+
+export async function generateMealPlan(
+  userProfile: UserProfile,
+  userId?: string
+): Promise<MealPlan> {
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-plan', {
+      body: {
+        userProfile,
+        user_id: userId,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to generate meal plan');
+    }
+
+    if (!data) {
+      throw new Error('No data received from meal plan generator');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data as MealPlan;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while generating the meal plan');
+  }
+}
