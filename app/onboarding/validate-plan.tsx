@@ -6,17 +6,16 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenWrapper, Card, Button } from '@/components';
+import { ScreenWrapper, Card, Button, MealCard } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { RefreshCw } from 'lucide-react-native';
-import type { MealPlan } from '@/services/ai';
+import type { MealPlan, Meal } from '@/services/ai';
+import { regenerateMeal } from '@/services/ai';
 
 const DAYS = [
   'Lundi',
@@ -38,6 +37,7 @@ export default function ValidatePlanScreen() {
   );
   const [loading, setLoading] = useState(false);
   const [accepting, setAccepting] = useState(false);
+  const [regeneratingMeal, setRegeneratingMeal] = useState<string | null>(null);
 
   const handleRegenerate = async () => {
     if (loading) {
@@ -155,11 +155,37 @@ export default function ValidatePlanScreen() {
     }
   };
 
-  const handleReplaceMeal = () => {
-    Alert.alert(
-      'Remplacer le repas',
-      'Fonctionnalité à venir : vous pourrez bientôt remplacer un repas individuellement.'
-    );
+  const handleRegenerateMeal = async (dayIndex: number, mealIndex: number) => {
+    if (!currentPlan || regeneratingMeal) return;
+
+    const mealKey = `${dayIndex}-${mealIndex}`;
+    setRegeneratingMeal(mealKey);
+
+    try {
+      const storedStr = await AsyncStorage.getItem('temp_user_profile');
+      if (!storedStr) {
+        Alert.alert('Erreur', 'Profil non trouvé');
+        return;
+      }
+
+      const profile = JSON.parse(storedStr);
+      const meal = currentPlan.days[dayIndex].meals[mealIndex];
+
+      console.log(`🔄 [MEAL] Régénération: ${meal.name}`);
+
+      const newMeal = await regenerateMeal(meal, profile);
+
+      console.log(`✅ [MEAL] Nouveau repas: ${newMeal.name}`);
+
+      const updatedPlan = { ...currentPlan };
+      updatedPlan.days[dayIndex].meals[mealIndex] = newMeal;
+      setCurrentPlan(updatedPlan);
+    } catch (error: any) {
+      console.error('🔴 [MEAL] Erreur:', error);
+      Alert.alert('Erreur', error.message || 'Impossible de régénérer le repas');
+    } finally {
+      setRegeneratingMeal(null);
+    }
   };
 
   if (!currentPlan || !currentPlan.days || currentPlan.days.length === 0) {
@@ -199,32 +225,30 @@ export default function ValidatePlanScreen() {
           </View>
         )}
 
-        {currentPlan.days.map((dayData, index) => (
-          <Card key={index} style={styles.card}>
-            <Text style={styles.dayTitle}>{DAYS[index]}</Text>
+        {currentPlan.days.map((dayData, dayIndex) => (
+          <Card key={dayIndex} style={styles.card}>
+            <Text style={styles.dayTitle}>{DAYS[dayIndex]}</Text>
             {dayData.meals && dayData.meals.length > 0 ? (
-              dayData.meals.map((meal, mealIndex) => (
-                <View key={mealIndex} style={styles.mealItem}>
-                  <View style={styles.mealHeader}>
-                    <View style={styles.mealInfo}>
-                      <Text style={styles.mealType}>{meal.type}</Text>
-                      <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.replaceButton}
-                      onPress={handleReplaceMeal}
-                    >
-                      <RefreshCw size={18} color={Colors.primary} />
-                    </TouchableOpacity>
+              dayData.meals.map((meal, mealIndex) => {
+                const mealKey = `${dayIndex}-${mealIndex}`;
+                const isRegenerating = regeneratingMeal === mealKey;
+                return (
+                  <View key={mealIndex} style={isRegenerating && styles.regeneratingMeal}>
+                    {isRegenerating && (
+                      <View style={styles.regeneratingOverlay}>
+                        <ActivityIndicator size="small" color={Colors.primary} />
+                      </View>
+                    )}
+                    <MealCard
+                      mealType={meal.type}
+                      mealName={meal.name}
+                      calories={meal.calories}
+                      ingredients={meal.ingredients}
+                      onRegenerate={() => handleRegenerateMeal(dayIndex, mealIndex)}
+                    />
                   </View>
-                  <Text style={styles.mealName}>{meal.name}</Text>
-                  {meal.ingredients && meal.ingredients.length > 0 && (
-                    <Text style={styles.ingredients} numberOfLines={2}>
-                      {meal.ingredients.join(', ')}
-                    </Text>
-                  )}
-                </View>
-              ))
+                );
+              })
             ) : (
               <Text style={styles.placeholder}>Aucun repas prévu</Text>
             )}
@@ -309,52 +333,21 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginBottom: Theme.spacing.md,
   },
-  mealItem: {
-    paddingVertical: Theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  mealHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xs,
-  },
-  mealInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  mealType: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginRight: Theme.spacing.md,
-  },
-  mealCalories: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-  },
-  replaceButton: {
-    padding: Theme.spacing.xs,
-    borderRadius: Theme.borderRadius.md,
-    backgroundColor: `${Colors.primary}15`,
-  },
-  mealName: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
-  },
-  ingredients: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-    lineHeight: 18,
-  },
   placeholder: {
     fontSize: Theme.fontSize.md,
     color: Colors.text.light,
     fontStyle: 'italic',
+  },
+  regeneratingMeal: {
+    position: 'relative',
+    opacity: 0.6,
+  },
+  regeneratingOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 10,
+    padding: Theme.spacing.sm,
   },
   actionBar: {
     flexDirection: 'row',

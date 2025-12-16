@@ -62,3 +62,41 @@ export async function generateMealPlan(
     throw new Error('An unexpected error occurred while generating the meal plan');
   }
 }
+
+export async function regenerateMeal(
+  currentMeal: Meal,
+  userProfile: UserProfile
+): Promise<Meal> {
+  try {
+    const diet = userProfile.dietary_preferences?.diet_type || 'standard';
+    const allergies = userProfile.dietary_preferences?.allergies || [];
+
+    const { data, error } = await supabase.functions.invoke('regenerate-meal', {
+      body: {
+        currentMeal,
+        diet,
+        allergies,
+        mealType: currentMeal.type,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to regenerate meal');
+    }
+
+    if (!data) {
+      throw new Error('No data received from meal regenerator');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data as Meal;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while regenerating the meal');
+  }
+}
