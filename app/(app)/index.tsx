@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button, ShoppingListModal } from '@/components';
+import { ScreenWrapper, Card, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import type { MealPlan, Meal, ShoppingList } from '@/services/ai';
-import { generateShoppingList } from '@/services/ai';
-import { ShoppingCart } from 'lucide-react-native';
+import type { MealPlan, Meal } from '@/services/ai';
 
 const DAYS_OF_WEEK = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -17,9 +15,6 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [planCreatedAt, setPlanCreatedAt] = useState<string | null>(null);
-  const [showShoppingModal, setShowShoppingModal] = useState(false);
-  const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
-  const [generatingList, setGeneratingList] = useState(false);
 
   useEffect(() => {
     loadMealPlan();
@@ -84,26 +79,6 @@ export default function DashboardScreen() {
     );
   };
 
-  const handleGenerateShoppingList = async () => {
-    if (!currentPlan || !user) return;
-
-    try {
-      setGeneratingList(true);
-      setShowShoppingModal(true);
-      const list = await generateShoppingList(currentPlan, user.id);
-      setShoppingList(list);
-    } catch (error: any) {
-      Alert.alert('Erreur', error.message || 'Impossible de générer la liste de courses');
-      setShowShoppingModal(false);
-    } finally {
-      setGeneratingList(false);
-    }
-  };
-
-  const handleCloseModal = () => {
-    setShowShoppingModal(false);
-  };
-
   if (loading) {
     return (
       <ScreenWrapper>
@@ -149,13 +124,6 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        <Button
-          title="Ma Liste de Courses"
-          onPress={handleGenerateShoppingList}
-          style={styles.shoppingButton}
-          icon={<ShoppingCart size={20} color="#fff" />}
-        />
-
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Repas du jour</Text>
           {todayMeals.length > 0 ? (
@@ -193,15 +161,6 @@ export default function DashboardScreen() {
           </View>
         </Card>
       </View>
-
-      <ShoppingListModal
-        visible={showShoppingModal}
-        onClose={handleCloseModal}
-        shoppingList={shoppingList}
-        loading={generatingList}
-        userId={user?.id || null}
-        onUpdate={() => setShoppingList(shoppingList)}
-      />
     </ScreenWrapper>
   );
 }
@@ -249,9 +208,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
-  },
-  shoppingButton: {
-    marginBottom: Theme.spacing.lg,
   },
   card: {
     marginBottom: Theme.spacing.md,

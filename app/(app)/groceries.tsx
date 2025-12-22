@@ -50,6 +50,10 @@ export default function GroceriesScreen() {
         setCurrentPlan(data.plan_data as MealPlan);
         if (data.shopping_list) {
           setShoppingList(data.shopping_list as ShoppingList);
+        } else if (data.plan_data) {
+          setLoading(false);
+          await handleGenerateList(data.plan_data as MealPlan);
+          return;
         }
       }
     } catch (error) {
@@ -59,12 +63,13 @@ export default function GroceriesScreen() {
     }
   };
 
-  const handleGenerateList = async () => {
-    if (!currentPlan || !user) return;
+  const handleGenerateList = async (plan?: MealPlan) => {
+    const planToUse = plan || currentPlan;
+    if (!planToUse || !user) return;
 
     try {
       setGenerating(true);
-      const list = await generateShoppingList(currentPlan, user.id);
+      const list = await generateShoppingList(planToUse, user.id);
       setShoppingList(list);
     } catch (error: any) {
       Alert.alert('Erreur', error.message || 'Impossible de générer la liste de courses');
@@ -109,12 +114,14 @@ export default function GroceriesScreen() {
     );
   };
 
-  if (loading) {
+  if (loading || generating) {
     return (
       <ScreenWrapper>
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Chargement...</Text>
+          <Text style={styles.loadingText}>
+            {generating ? 'Génération de votre liste...' : 'Chargement...'}
+          </Text>
         </View>
       </ScreenWrapper>
     );
@@ -131,39 +138,6 @@ export default function GroceriesScreen() {
               Créez d'abord un plan de repas pour générer votre liste de courses.
             </Text>
           </View>
-        </View>
-      </ScreenWrapper>
-    );
-  }
-
-  if (!shoppingList && !generating) {
-    return (
-      <ScreenWrapper>
-        <View style={styles.container}>
-          <Text style={styles.title}>Liste de courses</Text>
-          <View style={styles.emptyContainer}>
-            <ShoppingCart size={64} color={Colors.primary} />
-            <Text style={styles.emptyText}>
-              Générez votre liste de courses consolidée et organisée par rayon.
-            </Text>
-            <Button
-              title="Générer la liste"
-              onPress={handleGenerateList}
-              style={styles.generateButton}
-              icon={<ShoppingCart size={20} color="#fff" />}
-            />
-          </View>
-        </View>
-      </ScreenWrapper>
-    );
-  }
-
-  if (generating) {
-    return (
-      <ScreenWrapper>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Création de votre liste...</Text>
         </View>
       </ScreenWrapper>
     );

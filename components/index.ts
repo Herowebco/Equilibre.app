@@ -3,4 +3,3 @@ export { ScreenWrapper } from './ScreenWrapper';
 export { Card } from './Card';
 export { SelectableCard } from './SelectableCard';
 export { MealCard } from './MealCard';
-export { ShoppingListModal } from './ShoppingListModal';
