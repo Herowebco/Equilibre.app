@@ -1,5 +1,4 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,36 +16,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const body = await req.json();
     const { mealName, diet, allergies } = body;
 
-    console.log(`🍳 Looking up recipe for: ${mealName}`);
-
-    const dietProfile = allergies && allergies.length > 0
-      ? `${diet || "standard"}_${allergies.sort().join("_")}`
-      : diet || "standard";
-
-    const { data: cachedRecipe, error: cacheError } = await supabase
-      .from("recipe_cache")
-      .select("content")
-      .eq("meal_name", mealName)
-      .eq("diet_profile", dietProfile)
-      .maybeSingle();
-
-    if (cachedRecipe && !cacheError) {
-      console.log(`✅ Cache HIT for: ${mealName} (${dietProfile})`);
-      return new Response(JSON.stringify(cachedRecipe.content), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    console.log(`⚡ Cache MISS - Generating recipe for: ${mealName}`);
+    console.log(`🍳 Generating recipe for: ${mealName}`);
 
     const allergyText = allergies && allergies.length > 0
       ? `ALLERGIES À ÉVITER: ${JSON.stringify(allergies)}.`
@@ -99,20 +72,6 @@ Deno.serve(async (req: Request) => {
     text = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
     const recipeDetails = JSON.parse(text);
-
-    const { error: insertError } = await supabase
-      .from("recipe_cache")
-      .insert({
-        meal_name: mealName,
-        diet_profile: dietProfile,
-        content: recipeDetails,
-      });
-
-    if (insertError) {
-      console.warn(`⚠️ Failed to cache recipe: ${insertError.message}`);
-    } else {
-      console.log(`💾 Recipe cached for: ${mealName} (${dietProfile})`);
-    }
 
     console.log(`✅ Recipe generated for: ${mealName}`);
 
