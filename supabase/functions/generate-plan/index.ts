@@ -57,7 +57,11 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }),
     });
 
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Gemini API Error (${response.status}):`, errorText);
+      throw new Error(`Gemini API Error ${response.status}: ${errorText}`);
+    }
 
     const data = await response.json();
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
