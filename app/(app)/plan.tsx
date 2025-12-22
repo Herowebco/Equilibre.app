@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, MealCard, RecipeModal } from '@/components';
 import { Colors, Theme } from '@/constants';
@@ -99,8 +99,10 @@ export default function PlanScreen() {
     try {
       const details = await getRecipeDetails(meal.name, userProfile);
       setRecipeDetails(details);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading recipe details:', error);
+      Alert.alert('Erreur', error.message || 'Impossible de charger les détails de la recette');
+      setShowRecipeModal(false);
     } finally {
       setLoadingRecipe(false);
     }

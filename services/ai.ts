@@ -89,6 +89,9 @@ export async function generateMealPlan(
     return data as MealPlan;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.includes('Quota') || error.message.includes('Too Many Requests')) {
+        throw new Error("L'IA chauffe trop ! 🔥 Attendez 1 minute avant de réessayer.");
+      }
       throw error;
     }
     throw new Error('An unexpected error occurred while generating the meal plan');
@@ -129,6 +132,9 @@ export async function regenerateMeal(
     return data as Meal;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.includes('Quota') || error.message.includes('Too Many Requests')) {
+        throw new Error("L'IA chauffe trop ! 🔥 Attendez 1 minute avant de réessayer.");
+      }
       throw error;
     }
     throw new Error('An unexpected error occurred while regenerating the meal');
@@ -159,6 +165,9 @@ export async function generateShoppingList(planData: MealPlan, userId: string): 
     return data as ShoppingList;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.includes('Quota') || error.message.includes('Too Many Requests')) {
+        throw new Error("L'IA chauffe trop ! 🔥 Attendez 1 minute avant de réessayer.");
+      }
       throw error;
     }
     throw new Error('An unexpected error occurred while generating the shopping list');
@@ -215,6 +224,9 @@ export async function getRecipeDetails(
     return data as RecipeDetails;
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('429') || error.message.includes('Quota') || error.message.includes('Too Many Requests')) {
+        throw new Error("L'IA chauffe trop ! 🔥 Attendez 1 minute avant de réessayer.");
+      }
       throw error;
     }
     throw new Error('An unexpected error occurred while getting recipe details');
