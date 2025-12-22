@@ -44,6 +44,19 @@ export interface ShoppingList {
   categories: ShoppingCategory[];
 }
 
+export interface RecipeDetails {
+  ingredients: string[];
+  instructions: string[];
+  prep_time: string;
+  cook_time: string;
+  macros_detailed: {
+    protein: string;
+    carbs: string;
+    fat: string;
+    fiber: string;
+  };
+}
+
 export async function generateMealPlan(
   userProfile: UserProfile,
   userId?: string
@@ -163,5 +176,42 @@ export async function updateShoppingListItems(userId: string, shoppingList: Shop
       throw error;
     }
     throw new Error('An unexpected error occurred while updating the shopping list');
+  }
+}
+
+export async function getRecipeDetails(
+  mealName: string,
+  userProfile: UserProfile
+): Promise<RecipeDetails> {
+  try {
+    const diet = userProfile.dietary_preferences?.diet_type || 'standard';
+    const allergies = userProfile.dietary_preferences?.allergies || [];
+
+    const { data, error } = await supabase.functions.invoke('generate-recipe-details', {
+      body: {
+        mealName,
+        diet,
+        allergies,
+      },
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to get recipe details');
+    }
+
+    if (!data) {
+      throw new Error('No data received from recipe details generator');
+    }
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    return data as RecipeDetails;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('An unexpected error occurred while getting recipe details');
   }
 }

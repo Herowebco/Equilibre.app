@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button } from '@/components';
+import { ScreenWrapper, Card, Button, MealCard, RecipeModal } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import type { MealPlan } from '@/services/ai';
+import type { MealPlan, Meal, UserProfile, RecipeDetails } from '@/services/ai';
+import { getRecipeDetails } from '@/services/ai';
 
 const DAYS = [
   'Lundi',
@@ -22,9 +23,15 @@ export default function PlanScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
 
   useEffect(() => {
     loadMealPlan();
+    loadUserProfile();
   }, [user]);
 
   const loadMealPlan = async () => {
@@ -51,6 +58,58 @@ export default function PlanScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadUserProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setUserProfile({
+          gender: data.gender,
+          age: data.age,
+          height: data.height,
+          weight: data.weight,
+          activity_level: data.activity_level,
+          goal: data.goal,
+          dietary_preferences: data.dietary_preferences,
+        });
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  };
+
+  const handleMealClick = async (meal: Meal) => {
+    if (!userProfile) return;
+
+    setSelectedMeal(meal);
+    setShowRecipeModal(true);
+    setLoadingRecipe(true);
+    setRecipeDetails(null);
+
+    try {
+      const details = await getRecipeDetails(meal.name, userProfile);
+      setRecipeDetails(details);
+    } catch (error) {
+      console.error('Error loading recipe details:', error);
+    } finally {
+      setLoadingRecipe(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowRecipeModal(false);
+    setSelectedMeal(null);
+    setRecipeDetails(null);
   };
 
   if (loading) {
@@ -93,24 +152,28 @@ export default function PlanScreen() {
             <Text style={styles.dayTitle}>{DAYS[index]}</Text>
             {dayData.meals && dayData.meals.length > 0 ? (
               dayData.meals.map((meal, mealIndex) => (
-                <View key={mealIndex} style={styles.mealItem}>
-                  <View style={styles.mealHeader}>
-                    <Text style={styles.mealType}>{meal.type}</Text>
-                    <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-                  </View>
-                  <Text style={styles.mealName}>{meal.name}</Text>
-                  {meal.ingredients && meal.ingredients.length > 0 && (
-                    <Text style={styles.ingredients} numberOfLines={2}>
-                      {meal.ingredients.join(', ')}
-                    </Text>
-                  )}
-                </View>
+                <MealCard
+                  key={mealIndex}
+                  mealType={meal.type}
+                  mealName={meal.name}
+                  calories={meal.calories}
+                  ingredients={meal.ingredients || []}
+                  onPress={() => handleMealClick(meal)}
+                />
               ))
             ) : (
               <Text style={styles.placeholder}>Aucun repas prévu</Text>
             )}
           </Card>
         ))}
+
+        <RecipeModal
+          visible={showRecipeModal}
+          onClose={handleCloseModal}
+          mealName={selectedMeal?.name || ''}
+          recipeDetails={recipeDetails}
+          loading={loadingRecipe}
+        />
       </View>
     </ScreenWrapper>
   );
@@ -166,37 +229,6 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.bold,
     color: Colors.primary,
     marginBottom: Theme.spacing.md,
-  },
-  mealItem: {
-    paddingVertical: Theme.spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  mealHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xs,
-  },
-  mealType: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  mealCalories: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-  },
-  mealName: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
-  },
-  ingredients: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-    lineHeight: 18,
   },
   placeholder: {
     fontSize: Theme.fontSize.md,

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { RefreshCw } from 'lucide-react-native';
+import { RefreshCw, ChevronRight } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 interface MealCardProps {
@@ -9,6 +9,7 @@ interface MealCardProps {
   calories: number;
   ingredients: string[];
   onRegenerate?: () => void;
+  onPress?: () => void;
 }
 
 export function MealCard({
@@ -17,6 +18,7 @@ export function MealCard({
   calories,
   ingredients,
   onRegenerate,
+  onPress,
 }: MealCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
@@ -40,7 +42,17 @@ export function MealCard({
         )}
       </View>
 
-      <Text style={styles.mealName}>{mealName}</Text>
+      <TouchableOpacity
+        style={styles.mealNameContainer}
+        onPress={onPress}
+        disabled={!onPress}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.mealName}>{mealName}</Text>
+        {onPress && (
+          <ChevronRight size={20} color={Colors.primary} />
+        )}
+      </TouchableOpacity>
 
       {ingredients && ingredients.length > 0 && (
         <TouchableOpacity
@@ -102,11 +114,17 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     backgroundColor: `${Colors.primary}15`,
   },
+  mealNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Theme.spacing.xs,
+  },
   mealName: {
+    flex: 1,
     fontSize: Theme.fontSize.md,
     color: Colors.text.primary,
     fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
   },
   ingredients: {
     fontSize: Theme.fontSize.sm,
