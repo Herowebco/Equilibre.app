@@ -30,7 +30,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet}`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     const systemPrompt = `
       Tu es nutritionniste. Crée un plan de 7 jours JSON STRICT.
       PROFIL: ${finalDiet}. ALLERGIES: ${JSON.stringify(finalAllergies)}.
