@@ -30,8 +30,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet}`);
 
-    // URL EXACTE DU POC (Version stable 1.5 Flash)
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
     const systemPrompt = `
       Tu es nutritionniste. Crée un plan de 7 jours JSON STRICT.
       PROFIL: ${finalDiet}. ALLERGIES: ${JSON.stringify(finalAllergies)}.
@@ -58,11 +57,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Gemini API Error (${response.status}):`, errorText);
-      throw new Error(`Gemini API Error ${response.status}: ${errorText}`);
-    }
+    if (!response.ok) throw new Error(await response.text());
 
     const data = await response.json();
     let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
