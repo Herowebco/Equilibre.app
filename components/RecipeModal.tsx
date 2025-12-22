@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { X, Clock, ChefHat } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
-import type { RecipeDetails } from '@/services/ai';
+import type { RecipeDetails, IngredientGroup } from '@/services/ai';
 
 interface RecipeModalProps {
   visible: boolean;
@@ -111,12 +111,32 @@ export function RecipeModal({
             <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
               {activeTab === 'ingredients' && (
                 <View style={styles.section}>
-                  {recipeDetails.ingredients.map((ingredient, index) => (
-                    <View key={index} style={styles.ingredientItem}>
-                      <View style={styles.bullet} />
-                      <Text style={styles.ingredientText}>{ingredient}</Text>
-                    </View>
-                  ))}
+                  {recipeDetails.ingredients.map((item: string | IngredientGroup, index: number) => {
+                    if (typeof item === 'string') {
+                      return (
+                        <View key={index} style={styles.ingredientItem}>
+                          <View style={styles.bullet} />
+                          <Text style={styles.ingredientText}>{item}</Text>
+                        </View>
+                      );
+                    }
+
+                    if (typeof item === 'object' && 'group' in item && 'list' in item) {
+                      return (
+                        <View key={index} style={styles.groupContainer}>
+                          <Text style={styles.groupTitle}>{item.group}</Text>
+                          {item.list.map((subItem: string, subIndex: number) => (
+                            <View key={subIndex} style={styles.ingredientItem}>
+                              <View style={styles.bullet} />
+                              <Text style={styles.ingredientText}>{subItem}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      );
+                    }
+
+                    return null;
+                  })}
 
                   {recipeDetails.macros_detailed && (
                     <View style={styles.macrosContainer}>
@@ -294,6 +314,17 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.primary,
     lineHeight: 22,
+  },
+  groupContainer: {
+    marginTop: Theme.spacing.lg,
+    marginBottom: Theme.spacing.md,
+  },
+  groupTitle: {
+    fontSize: Theme.fontSize.lg,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.primary,
+    marginBottom: Theme.spacing.sm,
+    paddingHorizontal: Theme.spacing.sm,
   },
   instructionItem: {
     flexDirection: 'row',

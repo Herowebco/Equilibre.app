@@ -44,8 +44,13 @@ export interface ShoppingList {
   categories: ShoppingCategory[];
 }
 
+export interface IngredientGroup {
+  group: string;
+  list: string[];
+}
+
 export interface RecipeDetails {
-  ingredients: string[];
+  ingredients: (string | IngredientGroup)[];
   instructions: string[];
   prep_time: string;
   cook_time: string;
