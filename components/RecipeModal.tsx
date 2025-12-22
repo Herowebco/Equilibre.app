@@ -174,14 +174,26 @@ export function RecipeModal({
 
               {activeTab === 'instructions' && (
                 <View style={styles.section}>
-                  {recipeDetails.instructions.map((instruction, index) => (
-                    <View key={index} style={styles.instructionItem}>
-                      <View style={styles.stepNumber}>
-                        <Text style={styles.stepNumberText}>{index + 1}</Text>
+                  {recipeDetails.instructions.map((instruction: any, index: number) => {
+                    let stepText = "";
+
+                    if (typeof instruction === 'string') {
+                      stepText = instruction;
+                    } else if (typeof instruction === 'object' && instruction !== null) {
+                      stepText = instruction.text || instruction.description || instruction.step || JSON.stringify(instruction);
+                    }
+
+                    const cleanText = stepText.replace(/^\d+\.\s*/, '');
+
+                    return (
+                      <View key={index} style={styles.instructionItem}>
+                        <View style={styles.stepNumber}>
+                          <Text style={styles.stepNumberText}>{index + 1}</Text>
+                        </View>
+                        <Text style={styles.instructionText}>{cleanText}</Text>
                       </View>
-                      <Text style={styles.instructionText}>{instruction.replace(/^\d+\.\s*/, '')}</Text>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               )}
               <View style={styles.bottomSpacer} />
