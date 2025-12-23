@@ -10,6 +10,7 @@ interface AuthContextType {
   profileComplete: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName?: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   checkProfileComplete: () => Promise<boolean>;
 }
@@ -156,6 +157,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? window.location.origin : undefined,
+      },
+    });
+
+    if (error) {
+      throw error;
+    }
+  };
+
   const logout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -173,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profileComplete,
         login,
         signup,
+        signInWithGoogle,
         logout,
         checkProfileComplete,
       }}

@@ -157,7 +157,7 @@ export default function GroceriesScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={handleGenerateList}
+            onPress={() => handleGenerateList()}
             style={styles.refreshButton}
             disabled={generating}
           >

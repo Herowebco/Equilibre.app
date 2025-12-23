@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +41,19 @@ export default function LoginScreen() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setError(err.message || 'Une erreur est survenue lors de la connexion avec Google');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScreenWrapper scrollable>
       <KeyboardAvoidingView
@@ -49,8 +62,8 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Connexion</Text>
-            <Text style={styles.subtitle}>Équilibre</Text>
+            <Text style={styles.title}>Bienvenue sur Équilibre</Text>
+            <Text style={styles.subtitle}>Votre nutrition, simplifiée par l'IA.</Text>
           </View>
 
           {error ? (
@@ -97,6 +110,20 @@ export default function LoginScreen() {
               style={styles.button}
             />
 
+            <View style={styles.separator}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>OU</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            <TouchableOpacity
+              style={styles.googleButton}
+              onPress={handleGoogleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
+            </TouchableOpacity>
+
             <View style={styles.footer}>
               <Text style={styles.footerText}>Pas encore de compte ? </Text>
               <Link href="/(auth)/signup" asChild>
@@ -126,15 +153,16 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xxl,
   },
   title: {
-    fontSize: Theme.fontSize.xxl,
+    fontSize: Theme.fontSize.xl,
     fontWeight: Theme.fontWeight.bold,
     color: Colors.text.primary,
     marginBottom: Theme.spacing.sm,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: Theme.fontSize.xl,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
+    fontSize: Theme.fontSize.md,
+    color: Colors.text.secondary,
+    textAlign: 'center',
   },
   form: {
     width: '100%',
@@ -185,6 +213,44 @@ const styles = StyleSheet.create({
   link: {
     fontSize: Theme.fontSize.md,
     color: Colors.primary,
+    fontWeight: Theme.fontWeight.medium,
+  },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Theme.spacing.lg,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.border,
+  },
+  separatorText: {
+    marginHorizontal: Theme.spacing.md,
+    fontSize: Theme.fontSize.sm,
+    color: Colors.text.secondary,
+    fontWeight: Theme.fontWeight.medium,
+  },
+  googleButton: {
+    backgroundColor: Colors.white,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  googleButtonText: {
+    fontSize: Theme.fontSize.md,
+    color: Colors.text.primary,
     fontWeight: Theme.fontWeight.medium,
   },
 });
