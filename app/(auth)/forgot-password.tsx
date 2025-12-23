@@ -7,24 +7,22 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { ScreenWrapper, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const { login, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Veuillez remplir tous les champs');
+  const handleResetPassword = async () => {
+    if (!email) {
+      setError('Veuillez entrer votre adresse email');
       return;
     }
 
@@ -32,27 +30,51 @@ export default function LoginScreen() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.replace('/(app)');
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/reset-password`
+        : undefined;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+
+      if (error) throw error;
+
+      setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de la connexion');
+      setError(err.message || 'Une erreur est survenue lors de l\'envoi du lien');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
+  if (success) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.header}>
+              <Text style={styles.title}>Email envoyé !</Text>
+              <Text style={styles.subtitle}>
+                Consultez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe.
+              </Text>
+            </View>
 
-    try {
-      await signInWithGoogle();
-    } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de la connexion avec Google');
-    } finally {
-      setLoading(false);
-    }
-  };
+            <View style={styles.successContainer}>
+              <Text style={styles.successText}>
+                Si vous ne recevez pas d'email dans quelques minutes, vérifiez vos spams ou réessayez.
+              </Text>
+            </View>
+
+            <Button
+              title="Retour à la connexion"
+              onPress={() => router.push('/(auth)/login')}
+            />
+          </View>
+        </View>
+      </ScreenWrapper>
+    );
+  }
 
   return (
     <ScreenWrapper scrollable>
@@ -62,8 +84,10 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Bienvenue sur Équilibre</Text>
-            <Text style={styles.subtitle}>Votre nutrition, simplifiée par l'IA.</Text>
+            <Text style={styles.title}>Mot de passe oublié ?</Text>
+            <Text style={styles.subtitle}>
+              Entrez votre adresse email et nous vous enverrons un lien pour réinitialiser votre mot de passe.
+            </Text>
           </View>
 
           {error ? (
@@ -88,52 +112,19 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Mot de passe</Text>
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor={Colors.text.light}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!loading}
-              />
-              <Link href="/(auth)/forgot-password" asChild>
-                <TouchableOpacity style={styles.forgotPassword} disabled={loading}>
-                  <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
-
             <Button
-              title="Se connecter"
-              onPress={handleLogin}
+              title="Envoyer le lien de réinitialisation"
+              onPress={handleResetPassword}
               loading={loading}
               disabled={loading}
               style={styles.button}
             />
 
-            <View style={styles.separator}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>OU</Text>
-              <View style={styles.separatorLine} />
-            </View>
-
-            <TouchableOpacity
-              style={styles.googleButton}
-              onPress={handleGoogleLogin}
-              disabled={loading}
-            >
-              <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
-            </TouchableOpacity>
-
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Pas encore de compte ? </Text>
-              <Link href="/(auth)/signup" asChild>
+              <Text style={styles.footerText}>Vous vous souvenez de votre mot de passe ? </Text>
+              <Link href="/(auth)/login" asChild>
                 <TouchableOpacity disabled={loading}>
-                  <Text style={styles.link}>S'inscrire</Text>
+                  <Text style={styles.link}>Se connecter</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -168,6 +159,7 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 22,
   },
   form: {
     width: '100%',
@@ -205,6 +197,19 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontSize: Theme.fontSize.md,
   },
+  successContainer: {
+    backgroundColor: '#E8F5E9',
+    padding: Theme.spacing.md,
+    borderRadius: Theme.borderRadius.sm,
+    marginBottom: Theme.spacing.lg,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.success,
+  },
+  successText: {
+    color: '#2E7D32',
+    fontSize: Theme.fontSize.md,
+    lineHeight: 22,
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -217,53 +222,6 @@ const styles = StyleSheet.create({
   },
   link: {
     fontSize: Theme.fontSize.md,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  separator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: Theme.spacing.lg,
-  },
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.border,
-  },
-  separatorText: {
-    marginHorizontal: Theme.spacing.md,
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  googleButton: {
-    backgroundColor: Colors.white,
-    borderRadius: Theme.borderRadius.md,
-    padding: Theme.spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  googleButtonText: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: Theme.spacing.sm,
-  },
-  forgotPasswordText: {
-    fontSize: Theme.fontSize.sm,
     color: Colors.primary,
     fontWeight: Theme.fontWeight.medium,
   },
