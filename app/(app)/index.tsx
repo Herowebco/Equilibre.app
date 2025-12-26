@@ -138,11 +138,15 @@ export default function DashboardScreen() {
     return meals.reduce(
       (acc, meal, index) => {
         if (consumedIndices.includes(index)) {
+          const protein = meal.macros?.protein || meal.protein || 0;
+          const carbs = meal.macros?.carbs || meal.carbs || 0;
+          const fats = meal.macros?.fat || meal.fats || 0;
+
           return {
             calories: acc.calories + (meal.calories || 0),
-            protein: acc.protein + (meal.protein || 0),
-            carbs: acc.carbs + (meal.carbs || 0),
-            fats: acc.fats + (meal.fats || 0),
+            protein: acc.protein + protein,
+            carbs: acc.carbs + carbs,
+            fats: acc.fats + fats,
           };
         }
         return acc;

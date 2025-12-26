@@ -18,6 +18,11 @@ export interface Meal {
   type: string;
   name: string;
   calories: number;
+  macros?: {
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
   protein?: number;
   carbs?: number;
   fats?: number;
