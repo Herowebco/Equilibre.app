@@ -115,6 +115,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email!,
         name: data.user.user_metadata?.full_name,
       });
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('has_completed_onboarding')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      const isComplete = !!profile?.has_completed_onboarding;
+      setProfileComplete(isComplete);
     }
   };
 
@@ -139,6 +148,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email!,
         name: fullName,
       });
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('has_completed_onboarding')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      const isComplete = !!profile?.has_completed_onboarding;
+      setProfileComplete(isComplete);
     }
   };
 
