@@ -18,7 +18,6 @@ interface RecipeModalProps {
   mealName: string;
   recipeDetails: RecipeDetails | null;
   loading: boolean;
-  recipeId?: string;
   isFavorite?: boolean;
   onToggleFavorite?: () => void;
 }
@@ -31,7 +30,6 @@ export function RecipeModal({
   mealName,
   recipeDetails,
   loading,
-  recipeId,
   isFavorite = false,
   onToggleFavorite,
 }: RecipeModalProps) {
@@ -68,7 +66,7 @@ export function RecipeModal({
             </View>
           </View>
           <View style={styles.headerActions}>
-            {onToggleFavorite && recipeId && (
+            {onToggleFavorite && (
               <TouchableOpacity
                 onPress={onToggleFavorite}
                 style={styles.favoriteButton}

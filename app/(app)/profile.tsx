@@ -81,7 +81,7 @@ export default function ProfileScreen() {
   const handleToggleFavorite = async () => {
     if (!user || !selectedRecipe) return;
 
-    await toggleFavorite(user.id, selectedRecipe.id);
+    await toggleFavorite(user.id, selectedRecipe.meal_name);
     setRecipeModalVisible(false);
     loadFavorites();
   };
@@ -217,7 +217,7 @@ export default function ProfileScreen() {
                   >
                     <View style={styles.favoriteInfo}>
                       <Text style={styles.favoriteName}>{recipe.meal_name}</Text>
-                      {recipe.content.macros_detailed && (
+                      {recipe.content?.macros_detailed && (
                         <View style={styles.macroRow}>
                           <Text style={styles.macroText}>
                             P: {recipe.content.macros_detailed.protein}
@@ -246,7 +246,6 @@ export default function ProfileScreen() {
         mealName={selectedRecipe?.meal_name || ''}
         recipeDetails={selectedRecipe?.content as any || null}
         loading={false}
-        recipeId={selectedRecipe?.id}
         isFavorite={true}
         onToggleFavorite={handleToggleFavorite}
       />

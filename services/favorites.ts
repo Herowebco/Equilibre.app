@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 export interface FavoriteRecipe {
   id: string;
   meal_name: string;
-  content: {
+  content?: {
     ingredients: any[];
     instructions: string[];
     prep_time: string;
@@ -18,32 +18,16 @@ export interface FavoriteRecipe {
   created_at: string;
 }
 
-export async function getRecipeIdByName(mealName: string): Promise<string | null> {
-  try {
-    const { data, error } = await supabase
-      .from('recipe_cache')
-      .select('id')
-      .eq('meal_name', mealName)
-      .maybeSingle();
-
-    if (error) throw error;
-    return data?.id || null;
-  } catch (error) {
-    console.error('Error getting recipe ID:', error);
-    return null;
-  }
-}
-
 export async function checkIsFavorite(
   userId: string,
-  recipeId: string
+  mealName: string
 ): Promise<boolean> {
   try {
     const { data, error } = await supabase
       .from('user_favorites')
       .select('id')
       .eq('user_id', userId)
-      .eq('recipe_cache_id', recipeId)
+      .eq('meal_name', mealName)
       .maybeSingle();
 
     if (error) throw error;
@@ -56,14 +40,14 @@ export async function checkIsFavorite(
 
 export async function addToFavorites(
   userId: string,
-  recipeId: string
+  mealName: string
 ): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('user_favorites')
       .insert({
         user_id: userId,
-        recipe_cache_id: recipeId,
+        meal_name: mealName,
       });
 
     if (error) throw error;
@@ -76,14 +60,14 @@ export async function addToFavorites(
 
 export async function removeFromFavorites(
   userId: string,
-  recipeId: string
+  mealName: string
 ): Promise<boolean> {
   try {
     const { error } = await supabase
       .from('user_favorites')
       .delete()
       .eq('user_id', userId)
-      .eq('recipe_cache_id', recipeId);
+      .eq('meal_name', mealName);
 
     if (error) throw error;
     return true;
@@ -95,45 +79,46 @@ export async function removeFromFavorites(
 
 export async function toggleFavorite(
   userId: string,
-  recipeId: string
+  mealName: string
 ): Promise<boolean> {
-  const isFavorite = await checkIsFavorite(userId, recipeId);
+  const isFavorite = await checkIsFavorite(userId, mealName);
 
   if (isFavorite) {
-    return await removeFromFavorites(userId, recipeId);
+    return await removeFromFavorites(userId, mealName);
   } else {
-    return await addToFavorites(userId, recipeId);
+    return await addToFavorites(userId, mealName);
   }
 }
 
 export async function getUserFavorites(userId: string): Promise<FavoriteRecipe[]> {
   try {
-    const { data, error } = await supabase
+    const { data: favorites, error } = await supabase
       .from('user_favorites')
-      .select(`
-        id,
-        recipe_cache_id,
-        created_at,
-        recipe_cache (
-          id,
-          meal_name,
-          content,
-          created_at
-        )
-      `)
+      .select('id, meal_name, created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    if (!favorites) return [];
 
-    if (!data) return [];
+    const results: FavoriteRecipe[] = await Promise.all(
+      favorites.map(async (fav) => {
+        const { data: recipe } = await supabase
+          .from('recipe_cache')
+          .select('content')
+          .eq('meal_name', fav.meal_name)
+          .maybeSingle();
 
-    return data.map((item: any) => ({
-      id: item.recipe_cache.id,
-      meal_name: item.recipe_cache.meal_name,
-      content: item.recipe_cache.content,
-      created_at: item.created_at,
-    }));
+        return {
+          id: fav.id,
+          meal_name: fav.meal_name,
+          content: recipe?.content || undefined,
+          created_at: fav.created_at,
+        };
+      })
+    );
+
+    return results;
   } catch (error) {
     console.error('Error fetching favorites:', error);
     return [];
