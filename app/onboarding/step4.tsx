@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenWrapper, Button, SelectableCard } from '@/components';
+import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -163,8 +163,9 @@ export default function Step4Screen() {
           </View>
         )}
 
+        <ProgressBar currentStep={4} totalSteps={4} />
+
         <View style={styles.header}>
-          <Text style={styles.step}>Étape 4/4</Text>
           <Text style={styles.title}>Préférences alimentaires</Text>
           <Text style={styles.subtitle}>
             Dernière étape avant de générer votre plan
@@ -259,12 +260,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Theme.spacing.xl,
-  },
-  step: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
   },
   title: {
     fontSize: Theme.fontSize.xxl,

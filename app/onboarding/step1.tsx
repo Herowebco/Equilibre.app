@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Button, SelectableCard } from '@/components';
+import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
@@ -34,8 +34,9 @@ export default function Step1Screen() {
   return (
     <ScreenWrapper scrollable>
       <View style={styles.container}>
+        <ProgressBar currentStep={1} totalSteps={4} />
+
         <View style={styles.header}>
-          <Text style={styles.step}>Étape 1/4</Text>
           <Text style={styles.title}>Informations de base</Text>
           <Text style={styles.subtitle}>
             Parlez-nous un peu de vous
@@ -116,12 +117,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Theme.spacing.xl,
-  },
-  step: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
   },
   title: {
     fontSize: Theme.fontSize.xxl,

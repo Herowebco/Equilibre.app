@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Button, SelectableCard } from '@/components';
+import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
@@ -43,8 +43,9 @@ export default function Step3Screen() {
   return (
     <ScreenWrapper scrollable>
       <View style={styles.container}>
+        <ProgressBar currentStep={3} totalSteps={4} />
+
         <View style={styles.header}>
-          <Text style={styles.step}>Étape 3/4</Text>
           <Text style={styles.title}>Votre objectif</Text>
           <Text style={styles.subtitle}>
             Quel est votre objectif principal ?
@@ -89,12 +90,6 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Theme.spacing.xl,
-  },
-  step: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
   },
   title: {
     fontSize: Theme.fontSize.xxl,
