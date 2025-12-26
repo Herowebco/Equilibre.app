@@ -143,6 +143,13 @@ export default function ValidatePlanScreen() {
 
       if (planError) throw planError;
 
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ has_completed_onboarding: true })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
       resetData();
       router.replace('/(app)');
     } catch (error: any) {
