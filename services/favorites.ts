@@ -18,6 +18,22 @@ export interface FavoriteRecipe {
   created_at: string;
 }
 
+export async function getRecipeIdByName(mealName: string): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('recipe_cache')
+      .select('id')
+      .eq('meal_name', mealName)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data?.id || null;
+  } catch (error) {
+    console.error('Error getting recipe ID:', error);
+    return null;
+  }
+}
+
 export async function checkIsFavorite(
   userId: string,
   recipeId: string

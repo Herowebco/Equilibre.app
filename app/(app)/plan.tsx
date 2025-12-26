@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal, UserProfile, RecipeDetails } from '@/services/ai';
 import { getRecipeDetails } from '@/services/ai';
+import { getUserFavorites, toggleFavorite, getRecipeIdByName } from '@/services/favorites';
 
 const DAYS = [
   'Lundi',
@@ -28,10 +29,13 @@ export default function PlanScreen() {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<Set<string>>(new Set());
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   useEffect(() => {
     loadMealPlan();
     loadUserProfile();
+    loadFavorites();
   }, [user]);
 
   const loadMealPlan = async () => {
@@ -51,7 +55,18 @@ export default function PlanScreen() {
       if (error) throw error;
 
       if (data) {
-        setCurrentPlan(data.plan_data as MealPlan);
+        const plan = data.plan_data as MealPlan;
+        setCurrentPlan(plan);
+
+        const allMeals: Meal[] = [];
+        if (plan.days) {
+          plan.days.forEach(day => {
+            if (day.meals) {
+              allMeals.push(...day.meals);
+            }
+          });
+        }
+        await loadMealRecipeIds(allMeals);
       }
     } catch (error) {
       console.error('Error loading meal plan:', error);
@@ -88,6 +103,41 @@ export default function PlanScreen() {
     }
   };
 
+  const loadFavorites = async () => {
+    if (!user) return;
+
+    try {
+      const favorites = await getUserFavorites(user.id);
+      const ids = new Set(favorites.map(f => f.id));
+      setFavoriteRecipeIds(ids);
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  };
+
+  const handleToggleFavorite = async (mealName: string) => {
+    if (!user) return;
+
+    try {
+      const recipeId = await getRecipeIdByName(mealName);
+      if (!recipeId) return;
+
+      await toggleFavorite(user.id, recipeId);
+
+      setFavoriteRecipeIds(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(recipeId)) {
+          newSet.delete(recipeId);
+        } else {
+          newSet.add(recipeId);
+        }
+        return newSet;
+      });
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
+  };
+
   const handleMealClick = async (meal: Meal) => {
     if (!userProfile) return;
 
@@ -97,6 +147,9 @@ export default function PlanScreen() {
     setRecipeDetails(null);
 
     try {
+      const recipeId = await getRecipeIdByName(meal.name);
+      setSelectedRecipeId(recipeId);
+
       const details = await getRecipeDetails(meal.name, userProfile);
       setRecipeDetails(details);
     } catch (error) {
@@ -110,6 +163,41 @@ export default function PlanScreen() {
     setShowRecipeModal(false);
     setSelectedMeal(null);
     setRecipeDetails(null);
+    setSelectedRecipeId(null);
+  };
+
+  const handleToggleFavoriteFromModal = async () => {
+    if (!user || !selectedRecipeId) return;
+
+    await toggleFavorite(user.id, selectedRecipeId);
+
+    setFavoriteRecipeIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(selectedRecipeId)) {
+        newSet.delete(selectedRecipeId);
+      } else {
+        newSet.add(selectedRecipeId);
+      }
+      return newSet;
+    });
+  };
+
+  const [mealRecipeIds, setMealRecipeIds] = useState<Map<string, string>>(new Map());
+
+  const loadMealRecipeIds = async (meals: Meal[]) => {
+    const idsMap = new Map<string, string>();
+    for (const meal of meals) {
+      const recipeId = await getRecipeIdByName(meal.name);
+      if (recipeId) {
+        idsMap.set(meal.name, recipeId);
+      }
+    }
+    setMealRecipeIds(idsMap);
+  };
+
+  const isMealFavorite = (mealName: string): boolean => {
+    const recipeId = mealRecipeIds.get(mealName);
+    return recipeId ? favoriteRecipeIds.has(recipeId) : false;
   };
 
   if (loading) {
@@ -158,7 +246,9 @@ export default function PlanScreen() {
                   mealName={meal.name}
                   calories={meal.calories}
                   ingredients={meal.ingredients || []}
+                  isFavorite={isMealFavorite(meal.name)}
                   onPress={() => handleMealClick(meal)}
+                  onToggleFavorite={() => handleToggleFavorite(meal.name)}
                 />
               ))
             ) : (
@@ -173,6 +263,9 @@ export default function PlanScreen() {
           mealName={selectedMeal?.name || ''}
           recipeDetails={recipeDetails}
           loading={loadingRecipe}
+          recipeId={selectedRecipeId || undefined}
+          isFavorite={selectedRecipeId ? favoriteRecipeIds.has(selectedRecipeId) : false}
+          onToggleFavorite={handleToggleFavoriteFromModal}
         />
       </View>
     </ScreenWrapper>

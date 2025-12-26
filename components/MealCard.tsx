@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { RefreshCw, ChevronRight, CheckCircle, Circle } from 'lucide-react-native';
+import { RefreshCw, ChevronRight, CheckCircle, Circle, Heart } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 interface MealCardProps {
@@ -9,9 +9,11 @@ interface MealCardProps {
   calories: number;
   ingredients: string[];
   isConsumed?: boolean;
+  isFavorite?: boolean;
   onRegenerate?: () => void;
   onPress?: () => void;
   onToggleConsume?: () => void;
+  onToggleFavorite?: () => void;
 }
 
 export function MealCard({
@@ -20,9 +22,11 @@ export function MealCard({
   calories,
   ingredients,
   isConsumed = false,
+  isFavorite = false,
   onRegenerate,
   onPress,
   onToggleConsume,
+  onToggleFavorite,
 }: MealCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
@@ -41,6 +45,21 @@ export function MealCard({
           </Text>
         </View>
         <View style={styles.actionsContainer}>
+          {onToggleFavorite && (
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onToggleFavorite();
+              }}
+            >
+              <Heart
+                size={20}
+                color={isFavorite ? '#FF6B9D' : Colors.text.light}
+                fill={isFavorite ? '#FF6B9D' : 'none'}
+              />
+            </TouchableOpacity>
+          )}
           {onToggleConsume && (
             <TouchableOpacity
               style={[styles.checkButton, isConsumed && styles.checkButtonActive]}
@@ -142,6 +161,9 @@ const styles = StyleSheet.create({
   actionsContainer: {
     flexDirection: 'row',
     gap: Theme.spacing.xs,
+  },
+  favoriteButton: {
+    padding: Theme.spacing.xs,
   },
   checkButton: {
     padding: Theme.spacing.xs,
