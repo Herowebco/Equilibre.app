@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal, UserProfile, RecipeDetails } from '@/services/ai';
 import { getRecipeDetails } from '@/services/ai';
-import { getUserFavorites, toggleFavorite } from '@/services/favorites';
 
 const DAYS = [
   'Lundi',
@@ -29,12 +28,10 @@ export default function PlanScreen() {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
-  const [favoriteMealNames, setFavoriteMealNames] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadMealPlan();
     loadUserProfile();
-    loadFavorites();
   }, [user]);
 
   const loadMealPlan = async () => {
@@ -88,47 +85,6 @@ export default function PlanScreen() {
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-    }
-  };
-
-  const loadFavorites = async () => {
-    if (!user) return;
-
-    try {
-      const favorites = await getUserFavorites(user.id);
-      const names = new Set(favorites.map(f => f.meal_name));
-      setFavoriteMealNames(names);
-    } catch (error) {
-      console.error('Error loading favorites:', error);
-    }
-  };
-
-  const handleToggleFavorite = async (mealName: string) => {
-    if (!user) return;
-
-    setFavoriteMealNames(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(mealName)) {
-        newSet.delete(mealName);
-      } else {
-        newSet.add(mealName);
-      }
-      return newSet;
-    });
-
-    try {
-      await toggleFavorite(user.id, mealName);
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      setFavoriteMealNames(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(mealName)) {
-          newSet.delete(mealName);
-        } else {
-          newSet.add(mealName);
-        }
-        return newSet;
-      });
     }
   };
 
@@ -202,9 +158,7 @@ export default function PlanScreen() {
                   mealName={meal.name}
                   calories={meal.calories}
                   ingredients={meal.ingredients || []}
-                  isFavorite={favoriteMealNames.has(meal.name)}
                   onPress={() => handleMealClick(meal)}
-                  onToggleFavorite={() => handleToggleFavorite(meal.name)}
                 />
               ))
             ) : (
@@ -219,8 +173,6 @@ export default function PlanScreen() {
           mealName={selectedMeal?.name || ''}
           recipeDetails={recipeDetails}
           loading={loadingRecipe}
-          isFavorite={selectedMeal ? favoriteMealNames.has(selectedMeal.name) : false}
-          onToggleFavorite={() => selectedMeal && handleToggleFavorite(selectedMeal.name)}
         />
       </View>
     </ScreenWrapper>

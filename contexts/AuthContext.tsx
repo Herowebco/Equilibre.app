@@ -28,13 +28,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('has_completed_onboarding')
+        .select('age, weight, height, goal')
         .eq('id', user.id)
         .maybeSingle();
 
       if (error) throw error;
 
-      const isComplete = data?.has_completed_onboarding || false;
+      const isComplete = !!(
+        data?.age &&
+        data?.weight &&
+        data?.height &&
+        data?.goal
+      );
 
       setProfileComplete(isComplete);
       return isComplete;
@@ -56,11 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('has_completed_onboarding')
+          .select('age, weight, height, goal')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        const isComplete = profile?.has_completed_onboarding || false;
+        const isComplete = !!(
+          profile?.age &&
+          profile?.weight &&
+          profile?.height &&
+          profile?.goal
+        );
         setProfileComplete(isComplete);
       }
       setLoading(false);
@@ -79,11 +89,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             const { data: profile } = await supabase
               .from('profiles')
-              .select('has_completed_onboarding')
+              .select('age, weight, height, goal')
               .eq('id', session.user.id)
               .maybeSingle();
 
-            const isComplete = profile?.has_completed_onboarding || false;
+            const isComplete = !!(
+              profile?.age &&
+              profile?.weight &&
+              profile?.height &&
+              profile?.goal
+            );
             setProfileComplete(isComplete);
           } else {
             setUser(null);

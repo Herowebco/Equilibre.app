@@ -8,7 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
-import { X, Clock, ChefHat, Heart } from 'lucide-react-native';
+import { X, Clock, ChefHat } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 import type { RecipeDetails, IngredientGroup } from '@/services/ai';
 
@@ -18,8 +18,6 @@ interface RecipeModalProps {
   mealName: string;
   recipeDetails: RecipeDetails | null;
   loading: boolean;
-  isFavorite?: boolean;
-  onToggleFavorite?: () => void;
 }
 
 type Tab = 'ingredients' | 'instructions';
@@ -30,8 +28,6 @@ export function RecipeModal({
   mealName,
   recipeDetails,
   loading,
-  isFavorite = false,
-  onToggleFavorite,
 }: RecipeModalProps) {
   const [activeTab, setActiveTab] = useState<Tab>('ingredients');
 
@@ -65,23 +61,9 @@ export function RecipeModal({
               )}
             </View>
           </View>
-          <View style={styles.headerActions}>
-            {onToggleFavorite && (
-              <TouchableOpacity
-                onPress={onToggleFavorite}
-                style={styles.favoriteButton}
-              >
-                <Heart
-                  size={24}
-                  color={isFavorite ? '#FF6B9D' : Colors.text.light}
-                  fill={isFavorite ? '#FF6B9D' : 'none'}
-                />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <X size={24} color={Colors.text.primary} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <X size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
         </View>
 
         {loading ? (
@@ -256,14 +238,6 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.sm,
     color: Colors.text.secondary,
     marginLeft: Theme.spacing.xs,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Theme.spacing.xs,
-  },
-  favoriteButton: {
-    padding: Theme.spacing.xs,
   },
   closeButton: {
     padding: Theme.spacing.xs,
