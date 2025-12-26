@@ -17,9 +17,10 @@ export interface Meal {
   type: 'breakfast' | 'lunch' | 'dinner' | 'snack';
   name: string;
   calories: number;
-  protein: number;
-  carbs: number;
-  fats: number;
+  protein?: number;
+  carbs?: number;
+  fats?: number;
+  ingredients?: string[];
   recipe?: string;
 }
 

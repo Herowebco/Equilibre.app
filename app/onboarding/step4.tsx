@@ -8,6 +8,7 @@ import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { generateMealPlan } from '@/services/ai';
+import { calculateDailyGoals } from '@/services/nutrition';
 
 type DietType = 'standard' | 'vegetarian' | 'vegan' | 'no_pork';
 
@@ -83,6 +84,18 @@ export default function Step4Screen() {
       };
 
       console.log('💾 [BOUTON] Sauvegarde du profil en DB...');
+
+      const dailyGoals = calculateDailyGoals({
+        gender: finalData.gender!,
+        age: finalData.age!,
+        height: finalData.height!,
+        weight: finalData.weight!,
+        activity_level: finalData.activity_level!,
+        goal: finalData.goal!,
+      });
+
+      console.log('📊 [BOUTON] Objectifs calculés:', dailyGoals);
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -97,6 +110,7 @@ export default function Step4Screen() {
             allergies: finalData.allergies,
             meals_per_day: finalData.meals_per_day,
           },
+          daily_goals: dailyGoals,
         })
         .eq('id', user.id);
 

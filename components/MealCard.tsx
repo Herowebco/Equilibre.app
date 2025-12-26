@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { RefreshCw, ChevronRight } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { RefreshCw, ChevronRight, CheckCircle, Circle } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 interface MealCardProps {
@@ -8,8 +8,10 @@ interface MealCardProps {
   mealName: string;
   calories: number;
   ingredients: string[];
+  isConsumed?: boolean;
   onRegenerate?: () => void;
   onPress?: () => void;
+  onToggleConsume?: () => void;
 }
 
 export function MealCard({
@@ -17,8 +19,10 @@ export function MealCard({
   mealName,
   calories,
   ingredients,
+  isConsumed = false,
   onRegenerate,
   onPress,
+  onToggleConsume,
 }: MealCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
@@ -26,20 +30,38 @@ export function MealCard({
   const ingredientsText = ingredients.join(', ');
 
   return (
-    <View style={styles.mealItem}>
+    <View style={[styles.mealItem, isConsumed && styles.mealItemConsumed]}>
       <View style={styles.mealHeader}>
         <View style={styles.mealInfo}>
-          <Text style={styles.mealType}>{mealType}</Text>
-          <Text style={styles.mealCalories}>{calories} kcal</Text>
+          <Text style={[styles.mealType, isConsumed && styles.consumedText]}>
+            {mealType}
+          </Text>
+          <Text style={[styles.mealCalories, isConsumed && styles.consumedText]}>
+            {calories} kcal
+          </Text>
         </View>
-        {onRegenerate && (
-          <TouchableOpacity
-            style={styles.replaceButton}
-            onPress={onRegenerate}
-          >
-            <RefreshCw size={18} color={Colors.primary} />
-          </TouchableOpacity>
-        )}
+        <View style={styles.actionsContainer}>
+          {onToggleConsume && (
+            <TouchableOpacity
+              style={[styles.checkButton, isConsumed && styles.checkButtonActive]}
+              onPress={onToggleConsume}
+            >
+              {isConsumed ? (
+                <CheckCircle size={20} color={Colors.primary} />
+              ) : (
+                <Circle size={20} color={Colors.text.light} />
+              )}
+            </TouchableOpacity>
+          )}
+          {onRegenerate && !isConsumed && (
+            <TouchableOpacity
+              style={styles.replaceButton}
+              onPress={onRegenerate}
+            >
+              <RefreshCw size={18} color={Colors.primary} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <TouchableOpacity
@@ -48,9 +70,11 @@ export function MealCard({
         disabled={!onPress}
         activeOpacity={0.7}
       >
-        <Text style={styles.mealName}>{mealName}</Text>
+        <Text style={[styles.mealName, isConsumed && styles.mealNameConsumed]}>
+          {mealName}
+        </Text>
         {onPress && (
-          <ChevronRight size={20} color={Colors.primary} />
+          <ChevronRight size={20} color={isConsumed ? Colors.text.light : Colors.primary} />
         )}
       </TouchableOpacity>
 
@@ -87,6 +111,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
+  mealItemConsumed: {
+    opacity: 0.6,
+  },
   mealHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -109,6 +136,20 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.sm,
     color: Colors.text.secondary,
   },
+  consumedText: {
+    color: Colors.text.light,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: Theme.spacing.xs,
+  },
+  checkButton: {
+    padding: Theme.spacing.xs,
+  },
+  checkButtonActive: {
+    backgroundColor: `${Colors.primary}10`,
+    borderRadius: Theme.borderRadius.md,
+  },
   replaceButton: {
     padding: Theme.spacing.xs,
     borderRadius: Theme.borderRadius.md,
@@ -125,6 +166,10 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.primary,
     fontWeight: Theme.fontWeight.medium,
+  },
+  mealNameConsumed: {
+    textDecorationLine: 'line-through',
+    color: Colors.text.light,
   },
   ingredients: {
     fontSize: Theme.fontSize.sm,

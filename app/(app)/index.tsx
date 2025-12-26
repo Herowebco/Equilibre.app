@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button } from '@/components';
+import { ScreenWrapper, Card, Button, DailyTracker, MealCard } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +15,14 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [planCreatedAt, setPlanCreatedAt] = useState<string | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [consumedMeals, setConsumedMeals] = useState<Record<string, number[]>>({});
+  const [dailyGoals, setDailyGoals] = useState({
+    calories: 2000,
+    protein: 150,
+    carbs: 200,
+    fats: 65,
+  });
 
   useEffect(() => {
     loadMealPlan();
@@ -25,20 +33,33 @@ export default function DashboardScreen() {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+
+      const { data: planData, error: planError } = await supabase
         .from('meal_plans')
-        .select('plan_data, created_at')
+        .select('id, plan_data, created_at, consumed_meals')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
+      if (planError) throw planError;
 
-      if (data) {
-        setCurrentPlan(data.plan_data as MealPlan);
-        setPlanCreatedAt(data.created_at);
+      if (planData) {
+        setCurrentPlan(planData.plan_data as MealPlan);
+        setPlanCreatedAt(planData.created_at);
+        setPlanId(planData.id);
+        setConsumedMeals(planData.consumed_meals || {});
+      }
+
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('daily_goals')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!profileError && profileData?.daily_goals) {
+        setDailyGoals(profileData.daily_goals);
       }
     } catch (error) {
       console.error('Error loading meal plan:', error);
@@ -66,15 +87,64 @@ export default function DashboardScreen() {
     return day.meals;
   };
 
+  const isMealConsumed = (mealIndex: number): boolean => {
+    const dayIndex = getCurrentDayIndex();
+    const dayKey = dayIndex.toString();
+    return consumedMeals[dayKey]?.includes(mealIndex) || false;
+  };
+
+  const toggleMealConsumption = async (mealIndex: number) => {
+    if (!planId) return;
+
+    const dayIndex = getCurrentDayIndex();
+    const dayKey = dayIndex.toString();
+    const currentDayMeals = consumedMeals[dayKey] || [];
+
+    let updatedDayMeals: number[];
+    if (currentDayMeals.includes(mealIndex)) {
+      updatedDayMeals = currentDayMeals.filter(i => i !== mealIndex);
+    } else {
+      updatedDayMeals = [...currentDayMeals, mealIndex];
+    }
+
+    const updatedConsumedMeals = {
+      ...consumedMeals,
+      [dayKey]: updatedDayMeals,
+    };
+
+    setConsumedMeals(updatedConsumedMeals);
+
+    try {
+      const { error } = await supabase
+        .from('meal_plans')
+        .update({ consumed_meals: updatedConsumedMeals })
+        .eq('id', planId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error updating meal consumption:', error);
+      setConsumedMeals(consumedMeals);
+    }
+  };
+
   const getTodayNutrition = () => {
     const meals = getTodayMeals();
+    const dayIndex = getCurrentDayIndex();
+    const dayKey = dayIndex.toString();
+    const consumedIndices = consumedMeals[dayKey] || [];
+
     return meals.reduce(
-      (acc, meal) => ({
-        calories: acc.calories + (meal.calories || 0),
-        protein: acc.protein + 0,
-        carbs: acc.carbs + 0,
-        fats: acc.fats + 0,
-      }),
+      (acc, meal, index) => {
+        if (consumedIndices.includes(index)) {
+          return {
+            calories: acc.calories + (meal.calories || 0),
+            protein: acc.protein + (meal.protein || 0),
+            carbs: acc.carbs + (meal.carbs || 0),
+            fats: acc.fats + (meal.fats || 0),
+          };
+        }
+        return acc;
+      },
       { calories: 0, protein: 0, carbs: 0, fats: 0 }
     );
   };
@@ -124,41 +194,25 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        <DailyTracker consumed={nutrition} goals={dailyGoals} />
+
         <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Repas du jour</Text>
+          <Text style={styles.cardTitle}>Prochains repas</Text>
           {todayMeals.length > 0 ? (
             todayMeals.map((meal, index) => (
-              <View key={index} style={styles.mealItem}>
-                <Text style={styles.mealType}>{meal.type}</Text>
-                <Text style={styles.mealName}>{meal.name}</Text>
-                <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-              </View>
+              <MealCard
+                key={index}
+                mealType={meal.type}
+                mealName={meal.name}
+                calories={meal.calories}
+                ingredients={meal.ingredients || []}
+                isConsumed={isMealConsumed(index)}
+                onToggleConsume={() => toggleMealConsumption(index)}
+              />
             ))
           ) : (
             <Text style={styles.cardText}>Aucun repas prévu</Text>
           )}
-        </Card>
-
-        <Card style={styles.card}>
-          <Text style={styles.cardTitle}>Suivi nutritionnel</Text>
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{nutrition.calories}</Text>
-              <Text style={styles.statLabel}>Calories</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{nutrition.protein}g</Text>
-              <Text style={styles.statLabel}>Protéines</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{nutrition.carbs}g</Text>
-              <Text style={styles.statLabel}>Glucides</Text>
-            </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{nutrition.fats}g</Text>
-              <Text style={styles.statLabel}>Lipides</Text>
-            </View>
-          </View>
         </Card>
       </View>
     </ScreenWrapper>
@@ -222,43 +276,5 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
     lineHeight: 22,
-  },
-  mealItem: {
-    paddingVertical: Theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  mealType: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
-  },
-  mealName: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
-    marginBottom: Theme.spacing.xs,
-  },
-  mealCalories: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontSize: Theme.fontSize.xl,
-    fontWeight: Theme.fontWeight.bold,
-    color: Colors.primary,
-    marginBottom: Theme.spacing.xs,
-  },
-  statLabel: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
   },
 });
