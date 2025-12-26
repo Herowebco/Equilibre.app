@@ -135,6 +135,32 @@ export default function ValidatePlanScreen() {
     try {
       setAccepting(true);
 
+      const storedStr = await AsyncStorage.getItem('temp_user_profile');
+      if (!storedStr) {
+        Alert.alert('Erreur', 'Profil non trouvé. Veuillez recommencer.');
+        return;
+      }
+
+      const profile = JSON.parse(storedStr);
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          age: profile.age,
+          gender: profile.gender,
+          height: profile.height,
+          weight: profile.weight,
+          activity_level: profile.activity_level,
+          goal: profile.goal,
+          diet: profile.dietary_preferences?.diet_type || 'standard',
+          allergies: profile.dietary_preferences?.allergies?.join(', ') || null,
+          meals_per_day: profile.dietary_preferences?.meals_per_day || 3,
+          has_completed_onboarding: true,
+        })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
       const { error: planError } = await supabase.from('meal_plans').insert({
         user_id: user.id,
         plan_data: currentPlan,
@@ -142,6 +168,8 @@ export default function ValidatePlanScreen() {
       });
 
       if (planError) throw planError;
+
+      await AsyncStorage.removeItem('temp_user_profile');
 
       resetData();
       router.replace('/(app)');
