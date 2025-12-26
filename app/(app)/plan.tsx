@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, MealCard, RecipeModal } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/hooks/useFavorites';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal, UserProfile, RecipeDetails } from '@/services/ai';
 import { getRecipeDetails } from '@/services/ai';
@@ -21,6 +22,7 @@ const DAYS = [
 export default function PlanScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -158,7 +160,9 @@ export default function PlanScreen() {
                   mealName={meal.name}
                   calories={meal.calories}
                   ingredients={meal.ingredients || []}
+                  isFavorite={isFavorite(meal.name)}
                   onPress={() => handleMealClick(meal)}
+                  onToggleFavorite={() => toggleFavorite(meal.name)}
                 />
               ))
             ) : (

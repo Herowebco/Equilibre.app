@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, DailyTracker, MealCard } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/hooks/useFavorites';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal } from '@/services/ai';
 
@@ -12,6 +13,7 @@ const DAYS_OF_WEEK = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi
 export default function DashboardScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
   const [planCreatedAt, setPlanCreatedAt] = useState<string | null>(null);
@@ -207,7 +209,9 @@ export default function DashboardScreen() {
                 calories={meal.calories}
                 ingredients={meal.ingredients || []}
                 isConsumed={isMealConsumed(index)}
+                isFavorite={isFavorite(meal.name)}
                 onToggleConsume={() => toggleMealConsumption(index)}
+                onToggleFavorite={() => toggleFavorite(meal.name)}
               />
             ))
           ) : (
