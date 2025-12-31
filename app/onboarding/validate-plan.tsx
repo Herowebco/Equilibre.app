@@ -145,8 +145,10 @@ export default function ValidatePlanScreen() {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({ has_completed_onboarding: true })
-        .eq('id', user.id);
+        .upsert({
+          id: user.id,
+          has_completed_onboarding: true,
+        });
 
       if (profileError) throw profileError;
 

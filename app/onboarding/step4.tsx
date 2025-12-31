@@ -98,7 +98,8 @@ export default function Step4Screen() {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
           gender: finalData.gender,
           age: finalData.age,
           height: finalData.height,
@@ -111,8 +112,7 @@ export default function Step4Screen() {
             meals_per_day: finalData.meals_per_day,
           },
           daily_goals: dailyGoals,
-        })
-        .eq('id', user.id);
+        });
 
       if (profileError) {
         console.error('🔴 [BOUTON] Erreur DB profil:', profileError);
