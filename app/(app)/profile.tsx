@@ -110,7 +110,7 @@ export default function ProfileScreen() {
       <Button
         title="Se déconnecter"
         onPress={handleLogout}
-        variant="outline"
+        variant="danger"
         style={styles.logoutButton}
         loading={loading}
         disabled={loading}

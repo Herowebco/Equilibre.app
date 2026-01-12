@@ -11,4 +11,5 @@ export const Colors = {
   border: '#E5E5E5',
   error: '#E57373',
   success: '#81C784',
+  danger: '#DC2626',
 };
