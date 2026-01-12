@@ -5,6 +5,12 @@ import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 
+const VALIDATION_RULES = {
+  age: { min: 15, max: 100, message: "L'âge doit être compris entre 15 et 100 ans" },
+  height: { min: 120, max: 250, message: "La taille doit être comprise entre 120 et 250 cm" },
+  weight: { min: 35, max: 300, message: "Le poids doit être compris entre 35 et 300 kg" },
+};
+
 export default function Step1Screen() {
   const router = useRouter();
   const { data, updateData } = useOnboarding();
@@ -14,22 +20,76 @@ export default function Step1Screen() {
   const [height, setHeight] = useState(data.height?.toString() || '');
   const [weight, setWeight] = useState(data.weight?.toString() || '');
 
+  const [errors, setErrors] = useState({
+    age: '',
+    height: '',
+    weight: '',
+  });
+
+  const validateNumber = (value: string, field: 'age' | 'height' | 'weight'): boolean => {
+    const numValue = Number(value);
+    const rules = VALIDATION_RULES[field];
+
+    if (!value || value.trim() === '') {
+      setErrors((prev) => ({ ...prev, [field]: '' }));
+      return false;
+    }
+
+    if (isNaN(numValue) || numValue < 0) {
+      setErrors((prev) => ({ ...prev, [field]: 'Veuillez entrer un nombre valide' }));
+      return false;
+    }
+
+    if (numValue < rules.min || numValue > rules.max) {
+      setErrors((prev) => ({ ...prev, [field]: rules.message }));
+      return false;
+    }
+
+    setErrors((prev) => ({ ...prev, [field]: '' }));
+    return true;
+  };
+
+  const handleAgeChange = (value: string) => {
+    const cleaned = value.replace(/[^0-9]/g, '');
+    setAge(cleaned);
+    if (cleaned) validateNumber(cleaned, 'age');
+    else setErrors((prev) => ({ ...prev, age: '' }));
+  };
+
+  const handleHeightChange = (value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    setHeight(cleaned);
+    if (cleaned) validateNumber(cleaned, 'height');
+    else setErrors((prev) => ({ ...prev, height: '' }));
+  };
+
+  const handleWeightChange = (value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    setWeight(cleaned);
+    if (cleaned) validateNumber(cleaned, 'weight');
+    else setErrors((prev) => ({ ...prev, weight: '' }));
+  };
+
   const handleNext = () => {
-    if (!age || !height || !weight) {
+    const ageValid = validateNumber(age, 'age');
+    const heightValid = validateNumber(height, 'height');
+    const weightValid = validateNumber(weight, 'weight');
+
+    if (!ageValid || !heightValid || !weightValid) {
       return;
     }
 
     updateData({
       gender,
-      age: parseInt(age),
-      height: parseFloat(height),
-      weight: parseFloat(weight),
+      age: Number(age),
+      height: Number(height),
+      weight: Number(weight),
     });
 
     router.push('/onboarding/step2');
   };
 
-  const isValid = age && height && weight;
+  const isValid = age && height && weight && !errors.age && !errors.height && !errors.weight;
 
   return (
     <ScreenWrapper scrollable>
@@ -65,37 +125,40 @@ export default function Step1Screen() {
           <View style={styles.section}>
             <Text style={styles.label}>Âge</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.age && styles.inputError]}
               value={age}
-              onChangeText={setAge}
+              onChangeText={handleAgeChange}
               placeholder="25"
               placeholderTextColor={Colors.text.light}
               keyboardType="number-pad"
             />
+            {errors.age ? <Text style={styles.errorText}>{errors.age}</Text> : null}
           </View>
 
           <View style={styles.section}>
             <Text style={styles.label}>Taille (cm)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.height && styles.inputError]}
               value={height}
-              onChangeText={setHeight}
+              onChangeText={handleHeightChange}
               placeholder="170"
               placeholderTextColor={Colors.text.light}
               keyboardType="decimal-pad"
             />
+            {errors.height ? <Text style={styles.errorText}>{errors.height}</Text> : null}
           </View>
 
           <View style={styles.section}>
             <Text style={styles.label}>Poids actuel (kg)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.weight && styles.inputError]}
               value={weight}
-              onChangeText={setWeight}
+              onChangeText={handleWeightChange}
               placeholder="70"
               placeholderTextColor={Colors.text.light}
               keyboardType="decimal-pad"
             />
+            {errors.weight ? <Text style={styles.errorText}>{errors.weight}</Text> : null}
           </View>
         </View>
 
@@ -155,6 +218,15 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: Theme.fontSize.sm,
+    marginTop: Theme.spacing.xs,
   },
   button: {
     marginTop: Theme.spacing.md,
