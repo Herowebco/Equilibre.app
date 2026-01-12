@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenWrapper, Card, Button, MealCard } from '@/components';
+import { ScreenWrapper, Card, Button, MealCard, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -227,14 +227,7 @@ export default function ValidatePlanScreen() {
           </Text>
         </View>
 
-        {loading && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.loadingText}>Régénération en cours...</Text>
-            </View>
-          </View>
-        )}
+        <LoadingPlanGenerator visible={loading} />
 
         {currentPlan.days.map((dayData, dayIndex) => (
           <Card key={dayIndex} style={styles.card}>
@@ -378,29 +371,6 @@ const styles = StyleSheet.create({
   },
   acceptButton: {
     flex: 1.5,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  loadingContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.xl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: Theme.spacing.md,
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
   },
   bottomSpacer: {
     height: Theme.spacing.lg,

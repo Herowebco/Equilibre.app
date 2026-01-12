@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components';
+import { ScreenWrapper, Button, SelectableCard, ProgressBar, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -166,16 +166,7 @@ export default function Step4Screen() {
   return (
     <ScreenWrapper scrollable>
       <View style={styles.container}>
-        {generatingPlan && (
-          <View style={styles.loadingOverlay}>
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.primary} />
-              <Text style={styles.loadingText}>
-                L'IA génère votre semaine...
-              </Text>
-            </View>
-          </View>
-        )}
+        <LoadingPlanGenerator visible={generatingPlan} />
 
         <ProgressBar currentStep={4} totalSteps={4} />
 
@@ -348,28 +339,5 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     flex: 2,
-  },
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  loadingContainer: {
-    backgroundColor: Colors.white,
-    borderRadius: Theme.borderRadius.lg,
-    padding: Theme.spacing.xl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: Theme.spacing.md,
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
   },
 });
