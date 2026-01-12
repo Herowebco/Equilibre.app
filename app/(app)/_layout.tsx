@@ -5,7 +5,7 @@ import { Colors } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function AppLayout() {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, profileComplete } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const rootNavigationState = useRootNavigationState();
@@ -18,8 +18,10 @@ export default function AppLayout() {
 
     if (!isAuthenticated && inApp) {
       router.replace('/(auth)/login');
+    } else if (isAuthenticated && !profileComplete && inApp) {
+      router.replace('/onboarding');
     }
-  }, [isAuthenticated, loading, segments, rootNavigationState?.key]);
+  }, [isAuthenticated, loading, profileComplete, segments, rootNavigationState?.key]);
 
   if (loading) {
     return null;

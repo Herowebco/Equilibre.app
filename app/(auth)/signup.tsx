@@ -74,7 +74,7 @@ export default function SignupScreen() {
 
     try {
       await signup(email, password, fullName);
-      router.replace('/(app)');
+      router.replace('/onboarding');
     } catch (err: any) {
       if (err.message?.toLowerCase().includes('already registered') ||
           err.message?.toLowerCase().includes('already exists') ||
