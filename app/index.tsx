@@ -17,7 +17,7 @@ export default function Index() {
       if (profileComplete) {
         router.replace('/(app)');
       } else {
-        router.replace('/onboarding/step1');
+        router.replace('/onboarding');
       }
     } else {
       router.replace('/(auth)/login');

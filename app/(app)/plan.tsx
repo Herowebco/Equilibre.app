@@ -135,7 +135,7 @@ export default function PlanScreen() {
           </Text>
           <Button
             title="Créer mon plan"
-            onPress={() => router.push('/onboarding/step1')}
+            onPress={() => router.push('/onboarding')}
             style={styles.createButton}
           />
         </View>

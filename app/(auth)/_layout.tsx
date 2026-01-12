@@ -18,7 +18,7 @@ export default function AuthLayout() {
       if (profileComplete) {
         router.replace('/(app)');
       } else {
-        router.replace('/onboarding/step1');
+        router.replace('/onboarding');
       }
     }
   }, [isAuthenticated, loading, profileComplete, segments, rootNavigationState?.key]);
