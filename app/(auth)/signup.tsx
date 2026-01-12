@@ -51,22 +51,22 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     setFieldErrors({});
 
-    const result = signupSchema.safeParse({
+    const validationResult = signupSchema.safeParse({
       fullName,
       email,
       password,
       confirmPassword,
     });
 
-    if (!result.success) {
-      const errors: FieldErrors = {};
-      result.error.errors.forEach((err) => {
-        const field = err.path[0] as keyof FieldErrors;
-        if (field && !errors[field]) {
-          errors[field] = err.message;
+    if (!validationResult.success) {
+      const validationErrors: FieldErrors = {};
+      validationResult.error.errors.forEach((zodError) => {
+        const fieldName = zodError.path[0] as keyof FieldErrors;
+        if (fieldName && !validationErrors[fieldName]) {
+          validationErrors[fieldName] = zodError.message;
         }
       });
-      setFieldErrors(errors);
+      setFieldErrors(validationErrors);
       return;
     }
 
@@ -75,14 +75,16 @@ export default function SignupScreen() {
     try {
       await signup(email, password, fullName);
       router.replace('/onboarding');
-    } catch (err: any) {
-      if (err.message?.toLowerCase().includes('already registered') ||
-          err.message?.toLowerCase().includes('already exists') ||
-          err.message?.toLowerCase().includes('user already registered')) {
+    } catch (supabaseError: any) {
+      const errorMessage = supabaseError?.message || '';
+
+      if (errorMessage.toLowerCase().includes('already registered') ||
+          errorMessage.toLowerCase().includes('already exists') ||
+          errorMessage.toLowerCase().includes('user already registered')) {
         setFieldErrors({ email: 'Cet email possède déjà un compte.' });
       } else {
         setFieldErrors({
-          email: err.message || "Une erreur est survenue lors de l'inscription"
+          email: errorMessage || "Une erreur est survenue lors de l'inscription"
         });
       }
     } finally {
