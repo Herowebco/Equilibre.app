@@ -51,19 +51,19 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     setFieldErrors({});
 
-    const validationResult = signupSchema.safeParse({
+    const validation = signupSchema.safeParse({
       fullName,
       email,
       password,
       confirmPassword,
     });
 
-    if (!validationResult.success) {
+    if (!validation.success) {
       const validationErrors: FieldErrors = {};
-      validationResult.error.errors.forEach((zodError) => {
-        const fieldName = zodError.path[0] as keyof FieldErrors;
+      validation.error.issues.forEach((issue) => {
+        const fieldName = issue.path[0] as keyof FieldErrors;
         if (fieldName && !validationErrors[fieldName]) {
-          validationErrors[fieldName] = zodError.message;
+          validationErrors[fieldName] = issue.message;
         }
       });
       setFieldErrors(validationErrors);
