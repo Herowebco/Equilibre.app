@@ -214,7 +214,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: Theme.spacing.lg,
+    marginTop: Theme.spacing.xxl,
+    flexWrap: 'wrap',
+    gap: 4,
   },
   footerText: {
     fontSize: Theme.fontSize.md,
@@ -223,6 +225,7 @@ const styles = StyleSheet.create({
   link: {
     fontSize: Theme.fontSize.md,
     color: Colors.primary,
-    fontWeight: Theme.fontWeight.medium,
+    fontWeight: Theme.fontWeight.bold,
+    textDecorationLine: 'underline',
   },
 });
