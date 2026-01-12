@@ -1,21 +1,30 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   TouchableOpacity,
   ScrollView,
   Alert,
+  Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper, Card, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { ShoppingCart, Check, Square, RefreshCw } from 'lucide-react-native';
+import { ShoppingCart, Check, Square, RefreshCw, ShoppingBasket } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, ShoppingList } from '@/services/ai';
 import { generateShoppingList, updateShoppingListItems } from '@/services/ai';
+
+const LOADING_MESSAGES = [
+  'Exploration de vos placards virtuels...',
+  'Organisation des ingrédients par rayon...',
+  'Vérification des quantités nécessaires...',
+  'Préparation de votre chariot de courses...',
+  'Chasse aux ingrédients manquants...',
+  'Finalisation de votre liste optimisée !',
+];
 
 export default function GroceriesScreen() {
   const { user } = useAuth();
@@ -23,12 +32,42 @@ export default function GroceriesScreen() {
   const [generating, setGenerating] = useState(false);
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(null);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const bounceAnim = useState(new Animated.Value(0))[0];
 
   useFocusEffect(
     useCallback(() => {
       loadShoppingList();
     }, [user])
   );
+
+  useEffect(() => {
+    if (loading || generating) {
+      const messageInterval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      }, 2500);
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -10,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+
+      return () => {
+        clearInterval(messageInterval);
+        bounceAnim.setValue(0);
+      };
+    }
+  }, [loading, generating]);
 
   const loadShoppingList = async () => {
     if (!user) return;
@@ -118,9 +157,16 @@ export default function GroceriesScreen() {
     return (
       <ScreenWrapper>
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
+          <Animated.View
+            style={[
+              styles.iconContainer,
+              { transform: [{ translateY: bounceAnim }] },
+            ]}
+          >
+            <ShoppingBasket size={64} color={Colors.primary} strokeWidth={2} />
+          </Animated.View>
           <Text style={styles.loadingText}>
-            {generating ? 'Génération de votre liste...' : 'Chargement...'}
+            {LOADING_MESSAGES[loadingMessageIndex]}
           </Text>
         </View>
       </ScreenWrapper>
@@ -211,10 +257,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: Theme.spacing.xl,
   },
+  iconContainer: {
+    marginBottom: Theme.spacing.xl,
+  },
   loadingText: {
     marginTop: Theme.spacing.md,
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: Theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',

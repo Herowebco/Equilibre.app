@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal } from '@/services/ai';
+import { generateShoppingList } from '@/services/ai';
 
 const DAYS_OF_WEEK = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
@@ -38,7 +39,7 @@ export default function DashboardScreen() {
 
       const { data: planData, error: planError } = await supabase
         .from('meal_plans')
-        .select('id, plan_data, created_at, consumed_meals')
+        .select('id, plan_data, created_at, consumed_meals, shopping_list')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -52,6 +53,10 @@ export default function DashboardScreen() {
         setPlanCreatedAt(planData.created_at);
         setPlanId(planData.id);
         setConsumedMeals(planData.consumed_meals || {});
+
+        if (!planData.shopping_list && planData.plan_data) {
+          generateShoppingListInBackground(planData.id, planData.plan_data as MealPlan);
+        }
       }
 
       const { data: profileData, error: profileError } = await supabase
@@ -67,6 +72,24 @@ export default function DashboardScreen() {
       console.error('Error loading meal plan:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateShoppingListInBackground = async (planId: string, planData: MealPlan) => {
+    if (!user) return;
+
+    try {
+      console.log('🛒 [BACKGROUND] Génération de la liste de courses en arrière-plan...');
+      const shoppingList = await generateShoppingList(planData, user.id);
+
+      await supabase
+        .from('meal_plans')
+        .update({ shopping_list: shoppingList })
+        .eq('id', planId);
+
+      console.log('✅ [BACKGROUND] Liste de courses générée et sauvegardée');
+    } catch (error) {
+      console.error('❌ [BACKGROUND] Erreur lors de la génération:', error);
     }
   };
 

@@ -6,12 +6,21 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
+  Animated,
 } from 'react-native';
-import { X, Check, Square } from 'lucide-react-native';
+import { X, Check, Square, ShoppingBasket } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 import type { ShoppingList } from '@/services/ai';
 import { updateShoppingListItems } from '@/services/ai';
+
+const LOADING_MESSAGES = [
+  'Exploration de vos placards virtuels...',
+  'Organisation des ingrédients par rayon...',
+  'Vérification des quantités nécessaires...',
+  'Préparation de votre chariot de courses...',
+  'Chasse aux ingrédients manquants...',
+  'Finalisation de votre liste optimisée !',
+];
 
 interface ShoppingListModalProps {
   visible: boolean;
@@ -31,10 +40,40 @@ export function ShoppingListModal({
   onUpdate,
 }: ShoppingListModalProps) {
   const [shoppingList, setShoppingList] = useState<ShoppingList | null>(initialShoppingList);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const bounceAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     setShoppingList(initialShoppingList);
   }, [initialShoppingList]);
+
+  useEffect(() => {
+    if (loading) {
+      const messageInterval = setInterval(() => {
+        setLoadingMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
+      }, 2500);
+
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: -10,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+
+      return () => {
+        clearInterval(messageInterval);
+        bounceAnim.setValue(0);
+      };
+    }
+  }, [loading]);
 
   const toggleItem = async (categoryIndex: number, itemIndex: number) => {
     if (!shoppingList || !userId) return;
@@ -77,8 +116,17 @@ export function ShoppingListModal({
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-            <Text style={styles.loadingText}>Création de votre liste...</Text>
+            <Animated.View
+              style={[
+                styles.iconContainer,
+                { transform: [{ translateY: bounceAnim }] },
+              ]}
+            >
+              <ShoppingBasket size={64} color={Colors.primary} strokeWidth={2} />
+            </Animated.View>
+            <Text style={styles.loadingText}>
+              {LOADING_MESSAGES[loadingMessageIndex]}
+            </Text>
           </View>
         ) : shoppingList && shoppingList.categories ? (
           <ScrollView style={styles.modalContent}>
@@ -154,11 +202,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: Theme.spacing.xl,
+  },
+  iconContainer: {
+    marginBottom: Theme.spacing.xl,
   },
   loadingText: {
     marginTop: Theme.spacing.md,
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: Theme.spacing.lg,
   },
   errorContainer: {
     flex: 1,
