@@ -12,6 +12,31 @@ import { useRouter, Link } from 'expo-router';
 import { ScreenWrapper, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { z } from 'zod';
+
+const signupSchema = z.object({
+  fullName: z.string()
+    .min(2, 'Le nom doit contenir au moins 2 caractères'),
+  email: z.string()
+    .min(1, 'L\'email est requis')
+    .email('Format d\'email invalide'),
+  password: z.string()
+    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+    .regex(/[0-9]/, 'Le mot de passe doit contenir au moins 1 chiffre')
+    .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins 1 majuscule'),
+  confirmPassword: z.string()
+    .min(1, 'Veuillez confirmer votre mot de passe'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Les mots de passe ne correspondent pas',
+  path: ['confirmPassword'],
+});
+
+type FieldErrors = {
+  fullName?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -21,32 +46,45 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const handleSignup = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
-      setError('Veuillez remplir tous les champs');
+    setFieldErrors({});
+
+    const result = signupSchema.safeParse({
+      fullName,
+      email,
+      password,
+      confirmPassword,
+    });
+
+    if (!result.success) {
+      const errors: FieldErrors = {};
+      result.error.errors.forEach((err) => {
+        const field = err.path[0] as keyof FieldErrors;
+        if (field && !errors[field]) {
+          errors[field] = err.message;
+        }
+      });
+      setFieldErrors(errors);
       return;
     }
 
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    setError('');
     setLoading(true);
 
     try {
       await signup(email, password, fullName);
       router.replace('/(app)');
     } catch (err: any) {
-      setError(err.message || "Une erreur est survenue lors de l'inscription");
+      if (err.message?.toLowerCase().includes('already registered') ||
+          err.message?.toLowerCase().includes('already exists') ||
+          err.message?.toLowerCase().includes('user already registered')) {
+        setFieldErrors({ email: 'Cet email possède déjà un compte.' });
+      } else {
+        setFieldErrors({
+          email: err.message || "Une erreur est survenue lors de l'inscription"
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -64,17 +102,11 @@ export default function SignupScreen() {
             <Text style={styles.subtitle}>Équilibre</Text>
           </View>
 
-          {error ? (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nom complet</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.fullName && styles.inputError]}
                 value={fullName}
                 onChangeText={setFullName}
                 placeholder="Jean Dupont"
@@ -82,12 +114,15 @@ export default function SignupScreen() {
                 autoCapitalize="words"
                 editable={!loading}
               />
+              {fieldErrors.fullName && (
+                <Text style={styles.fieldErrorText}>{fieldErrors.fullName}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.email && styles.inputError]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="votre@email.com"
@@ -97,12 +132,15 @@ export default function SignupScreen() {
                 autoComplete="email"
                 editable={!loading}
               />
+              {fieldErrors.email && (
+                <Text style={styles.fieldErrorText}>{fieldErrors.email}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mot de passe</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.password && styles.inputError]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -111,12 +149,15 @@ export default function SignupScreen() {
                 autoCapitalize="none"
                 editable={!loading}
               />
+              {fieldErrors.password && (
+                <Text style={styles.fieldErrorText}>{fieldErrors.password}</Text>
+              )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirmer le mot de passe</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.confirmPassword && styles.inputError]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="••••••••"
@@ -125,10 +166,13 @@ export default function SignupScreen() {
                 autoCapitalize="none"
                 editable={!loading}
               />
+              {fieldErrors.confirmPassword && (
+                <Text style={styles.fieldErrorText}>{fieldErrors.confirmPassword}</Text>
+              )}
             </View>
 
             <Button
-              title="S'inscrire"
+              title={loading ? "Création du compte..." : "S'inscrire"}
               onPress={handleSignup}
               loading={loading}
               disabled={loading}
@@ -195,20 +239,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  inputError: {
+    borderColor: Colors.error,
+    borderWidth: 2,
+  },
+  fieldErrorText: {
+    color: Colors.error,
+    fontSize: Theme.fontSize.sm,
+    marginTop: Theme.spacing.xs,
+    marginLeft: Theme.spacing.xs,
+  },
   button: {
     marginTop: Theme.spacing.md,
-  },
-  errorContainer: {
-    backgroundColor: '#FFEBEE',
-    padding: Theme.spacing.md,
-    borderRadius: Theme.borderRadius.sm,
-    marginBottom: Theme.spacing.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: Colors.error,
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: Theme.fontSize.md,
   },
   footer: {
     flexDirection: 'row',

@@ -55,16 +55,18 @@ export function Button({
       disabled={disabled || loading}
       activeOpacity={0.7}
     >
-      {loading ? (
-        <ActivityIndicator
-          color={variant === 'outline' ? Colors.primary : Colors.white}
-        />
-      ) : (
-        <View style={styles.content}>
-          {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={textStyleCombined}>{title}</Text>
-        </View>
-      )}
+      <View style={styles.content}>
+        {loading && (
+          <View style={styles.iconContainer}>
+            <ActivityIndicator
+              color={variant === 'outline' ? Colors.primary : Colors.white}
+              size="small"
+            />
+          </View>
+        )}
+        {!loading && icon && <View style={styles.iconContainer}>{icon}</View>}
+        <Text style={textStyleCombined}>{title}</Text>
+      </View>
     </TouchableOpacity>
   );
 }
