@@ -30,7 +30,7 @@ const DAYS = [
 export default function ValidatePlanScreen() {
   const router = useRouter();
   const { data, resetData } = useOnboarding();
-  const { user } = useAuth();
+  const { user, checkProfileComplete } = useAuth();
 
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(
     data.generatedPlan || null
@@ -145,12 +145,14 @@ export default function ValidatePlanScreen() {
 
       const { error: profileError } = await supabase
         .from('profiles')
-        .upsert({
-          id: user.id,
+        .update({
           has_completed_onboarding: true,
-        });
+        })
+        .eq('id', user.id);
 
       if (profileError) throw profileError;
+
+      await checkProfileComplete();
 
       resetData();
       router.replace('/(app)');
