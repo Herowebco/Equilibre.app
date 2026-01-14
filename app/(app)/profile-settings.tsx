@@ -290,8 +290,9 @@ export default function ProfileSettingsScreen() {
 
       setTimeout(() => {
         setIsGenerating(false);
-        router.replace('/(app)');
-      }, 500);
+        console.log('🔄 [PROFILE-REGEN] Redirection vers le dashboard...');
+        router.replace('/(app)/');
+      }, 1000);
     } catch (error: any) {
       console.error('🔴 [PROFILE-REGEN] Erreur fatale:', error);
       setIsGenerating(false);

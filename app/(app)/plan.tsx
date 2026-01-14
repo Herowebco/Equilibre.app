@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper, Card, Button, MealCard, RecipeModal } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,10 +31,13 @@ export default function PlanScreen() {
   const [recipeDetails, setRecipeDetails] = useState<RecipeDetails | null>(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
 
-  useEffect(() => {
-    loadMealPlan();
-    loadUserProfile();
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 [PLAN] Screen focused, reloading data...');
+      loadMealPlan();
+      loadUserProfile();
+    }, [user])
+  );
 
   const loadMealPlan = async () => {
     if (!user) return;

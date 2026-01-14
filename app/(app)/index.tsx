@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper, Card, Button, DailyTracker, MealCard } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,9 +27,12 @@ export default function DashboardScreen() {
     fats: 65,
   });
 
-  useEffect(() => {
-    loadMealPlan();
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      console.log('🔄 [DASHBOARD] Screen focused, reloading meal plan...');
+      loadMealPlan();
+    }, [user])
+  );
 
   const loadMealPlan = async () => {
     if (!user) return;
