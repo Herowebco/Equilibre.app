@@ -118,20 +118,35 @@ export default function ProfileSettingsScreen() {
     }
   };
 
-  const hasSignificantChanges = () => {
-    if (!initialData) return false;
-
-    return (
-      initialData.weight !== profileData.weight ||
-      initialData.target_weight !== profileData.target_weight ||
-      initialData.activity_level !== profileData.activity_level ||
-      initialData.goal !== profileData.goal ||
-      JSON.stringify(initialData.dietary_preferences) !== JSON.stringify(profileData.dietary_preferences)
-    );
-  };
-
   const handleSave = async () => {
     if (!user) return;
+
+    if (!initialData) {
+      console.error('No initial data loaded');
+      Alert.alert('Erreur', 'Les données initiales ne sont pas chargées');
+      return;
+    }
+
+    const hasNutritionalChanges =
+      initialData.weight !== profileData.weight ||
+      initialData.height !== profileData.height ||
+      initialData.age !== profileData.age ||
+      initialData.activity_level !== profileData.activity_level ||
+      initialData.goal !== profileData.goal ||
+      JSON.stringify(initialData.dietary_preferences) !== JSON.stringify(profileData.dietary_preferences);
+
+    console.log('=== PROFILE CHANGES DEBUG ===');
+    console.log('Initial Data:', initialData);
+    console.log('Current Data:', profileData);
+    console.log('Has Nutritional Changes:', hasNutritionalChanges);
+    console.log('Weight changed:', initialData.weight, '→', profileData.weight);
+    console.log('Activity changed:', initialData.activity_level, '→', profileData.activity_level);
+    console.log('Goal changed:', initialData.goal, '→', profileData.goal);
+    console.log('Diet changed:',
+      JSON.stringify(initialData.dietary_preferences),
+      '→',
+      JSON.stringify(profileData.dietary_preferences)
+    );
 
     setSaving(true);
 
@@ -153,7 +168,10 @@ export default function ProfileSettingsScreen() {
 
       if (error) throw error;
 
-      if (hasSignificantChanges()) {
+      console.log('Profile saved successfully');
+
+      if (hasNutritionalChanges) {
+        console.log('Showing regeneration alert');
         Alert.alert(
           'Profil mis à jour',
           'Vos besoins nutritionnels ont changé. Voulez-vous générer un nouveau plan adapté ?',
@@ -161,21 +179,34 @@ export default function ProfileSettingsScreen() {
             {
               text: 'Plus tard',
               style: 'cancel',
-              onPress: () => router.back(),
+              onPress: () => {
+                console.log('User chose to regenerate later');
+                setInitialData(profileData);
+                router.back();
+              },
             },
             {
               text: 'Générer',
-              onPress: () => router.replace('/onboarding/validate-plan'),
+              onPress: () => {
+                console.log('User chose to regenerate now');
+                setInitialData(profileData);
+                router.replace('/onboarding/validate-plan');
+              },
             },
           ]
         );
       } else {
+        console.log('No nutritional changes, showing success message');
         Alert.alert('Succès', 'Votre profil a été mis à jour', [
-          { text: 'OK', onPress: () => router.back() },
+          {
+            text: 'OK',
+            onPress: () => {
+              setInitialData(profileData);
+              router.back();
+            }
+          },
         ]);
       }
-
-      setInitialData(profileData);
     } catch (error) {
       console.error('Error saving profile:', error);
       Alert.alert('Erreur', 'Impossible de sauvegarder vos modifications');
