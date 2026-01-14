@@ -11,7 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button, SelectableCard } from '@/components';
+import { ScreenWrapper, Card, Button, SelectableCard, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { ArrowLeft, Save, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -70,6 +70,7 @@ export default function ProfileSettingsScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [initialData, setInitialData] = useState<ProfileData | null>(null);
   const [showRegenerationModal, setShowRegenerationModal] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
@@ -217,11 +218,88 @@ export default function ProfileSettingsScreen() {
     router.back();
   };
 
-  const handleRegenerateNow = () => {
-    console.log('User chose to regenerate now');
+  const handleRegenerateNow = async () => {
+    console.log('🟢 [PROFILE-REGEN] Début régénération du plan');
     setShowRegenerationModal(false);
-    setInitialData(profileData);
-    router.replace('/onboarding/validate-plan');
+    setIsGenerating(true);
+
+    try {
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+
+      console.log('📋 [PROFILE-REGEN] Archive ancien plan');
+      const { error: archiveError } = await supabase
+        .from('meal_plans')
+        .update({ status: 'archived' })
+        .eq('user_id', user.id)
+        .eq('status', 'active');
+
+      if (archiveError) {
+        console.error('⚠️ [PROFILE-REGEN] Erreur archivage:', archiveError);
+      }
+
+      const varianceId = Date.now();
+      console.log('🔢 [PROFILE-REGEN] Variance ID:', varianceId);
+      console.log('🤖 [PROFILE-REGEN] Appel Edge Function avec profil:', {
+        gender: profileData.gender,
+        age: profileData.age,
+        height: profileData.height,
+        weight: profileData.weight,
+        goal: profileData.goal,
+        activity_level: profileData.activity_level,
+      });
+
+      const { data: planData, error: generateError } = await supabase.functions.invoke(
+        'generate-plan',
+        {
+          body: {
+            userProfile: profileData,
+            user_id: user.id,
+            variance: varianceId,
+          },
+        }
+      );
+
+      if (generateError) {
+        console.error('🔴 [PROFILE-REGEN] Erreur Edge Function:', generateError);
+        throw new Error(generateError.message || 'Erreur lors de la génération');
+      }
+
+      if (!planData || planData.error) {
+        console.error('🔴 [PROFILE-REGEN] Erreur planData:', planData?.error);
+        throw new Error(planData?.error || 'Aucune donnée reçue');
+      }
+
+      console.log('✅ [PROFILE-REGEN] Plan généré! Jours:', planData.days?.length);
+      console.log('💾 [PROFILE-REGEN] Sauvegarde du nouveau plan');
+
+      const { error: insertError } = await supabase.from('meal_plans').insert({
+        user_id: user.id,
+        plan_data: planData,
+        status: 'active',
+      });
+
+      if (insertError) {
+        console.error('🔴 [PROFILE-REGEN] Erreur sauvegarde:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ [PROFILE-REGEN] Plan sauvegardé avec succès!');
+      setInitialData(profileData);
+
+      setTimeout(() => {
+        setIsGenerating(false);
+        router.replace('/(app)');
+      }, 500);
+    } catch (error: any) {
+      console.error('🔴 [PROFILE-REGEN] Erreur fatale:', error);
+      setIsGenerating(false);
+      Alert.alert(
+        'Erreur',
+        error.message || 'Impossible de générer le nouveau plan. Veuillez réessayer.'
+      );
+    }
   };
 
   if (loading) {
@@ -452,6 +530,8 @@ export default function ProfileSettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      <LoadingPlanGenerator visible={isGenerating} />
     </ScreenWrapper>
   );
 }
