@@ -8,11 +8,12 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, SelectableCard } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { ArrowLeft, Save } from 'lucide-react-native';
+import { ArrowLeft, Save, AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -70,6 +71,7 @@ export default function ProfileSettingsScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [initialData, setInitialData] = useState<ProfileData | null>(null);
+  const [showRegenerationModal, setShowRegenerationModal] = useState(false);
   const [profileData, setProfileData] = useState<ProfileData>({
     age: null,
     gender: null,
@@ -171,30 +173,8 @@ export default function ProfileSettingsScreen() {
       console.log('Profile saved successfully');
 
       if (hasNutritionalChanges) {
-        console.log('Showing regeneration alert');
-        Alert.alert(
-          'Profil mis à jour',
-          'Vos besoins nutritionnels ont changé. Voulez-vous générer un nouveau plan adapté ?',
-          [
-            {
-              text: 'Plus tard',
-              style: 'cancel',
-              onPress: () => {
-                console.log('User chose to regenerate later');
-                setInitialData(profileData);
-                router.back();
-              },
-            },
-            {
-              text: 'Générer',
-              onPress: () => {
-                console.log('User chose to regenerate now');
-                setInitialData(profileData);
-                router.replace('/onboarding/validate-plan');
-              },
-            },
-          ]
-        );
+        console.log('Showing regeneration modal');
+        setShowRegenerationModal(true);
       } else {
         console.log('No nutritional changes, showing success message');
         Alert.alert('Succès', 'Votre profil a été mis à jour', [
@@ -228,6 +208,20 @@ export default function ProfileSettingsScreen() {
         allergies: newAllergies,
       },
     });
+  };
+
+  const handleRegenerateLater = () => {
+    console.log('User chose to regenerate later');
+    setShowRegenerationModal(false);
+    setInitialData(profileData);
+    router.back();
+  };
+
+  const handleRegenerateNow = () => {
+    console.log('User chose to regenerate now');
+    setShowRegenerationModal(false);
+    setInitialData(profileData);
+    router.replace('/onboarding/validate-plan');
   };
 
   if (loading) {
@@ -421,6 +415,43 @@ export default function ProfileSettingsScreen() {
           style={styles.saveButton}
         />
       </ScrollView>
+
+      <Modal
+        visible={showRegenerationModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRegenerationModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalIconContainer}>
+              <AlertCircle size={48} color={Colors.primary} />
+            </View>
+
+            <Text style={styles.modalTitle}>Vos besoins ont changé</Text>
+
+            <Text style={styles.modalDescription}>
+              Vos besoins nutritionnels ont été modifiés. Souhaitez-vous générer un nouveau plan adapté à votre nouveau profil ?
+            </Text>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleRegenerateLater}
+              >
+                <Text style={styles.modalButtonTextSecondary}>Plus tard</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleRegenerateNow}
+              >
+                <Text style={styles.modalButtonTextPrimary}>Générer maintenant</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScreenWrapper>
   );
 }
@@ -558,5 +589,68 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: Theme.spacing.md,
     marginBottom: Theme.spacing.xl,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Theme.spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: Theme.borderRadius.lg,
+    padding: Theme.spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  modalIconContainer: {
+    marginBottom: Theme.spacing.lg,
+  },
+  modalTitle: {
+    fontSize: Theme.fontSize.xl,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Theme.spacing.md,
+    textAlign: 'center',
+  },
+  modalDescription: {
+    fontSize: Theme.fontSize.md,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Theme.spacing.xl,
+    lineHeight: 22,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: Theme.spacing.md,
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: Theme.spacing.md,
+    paddingHorizontal: Theme.spacing.lg,
+    borderRadius: Theme.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonSecondary: {
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalButtonPrimary: {
+    backgroundColor: Colors.primary,
+  },
+  modalButtonTextSecondary: {
+    fontSize: Theme.fontSize.md,
+    fontWeight: Theme.fontWeight.medium,
+    color: Colors.text.primary,
+  },
+  modalButtonTextPrimary: {
+    fontSize: Theme.fontSize.md,
+    fontWeight: Theme.fontWeight.medium,
+    color: Colors.white,
   },
 });
