@@ -85,6 +85,12 @@ export default function AppLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="profile-settings"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

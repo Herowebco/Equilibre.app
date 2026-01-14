@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, MealCard, PasswordSettings } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { User, HelpCircle, ChevronRight } from 'lucide-react-native';
+import { User, HelpCircle, ChevronRight, Settings } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { supabase } from '@/lib/supabase';
@@ -118,6 +118,25 @@ export default function ProfileScreen() {
 
   const renderInfoTab = () => (
     <>
+      <TouchableOpacity
+        style={styles.settingsCard}
+        onPress={() => router.push('/(app)/profile-settings')}
+        activeOpacity={0.7}
+      >
+        <View style={styles.settingsContent}>
+          <View style={styles.settingsIconContainer}>
+            <Settings size={24} color={Colors.primary} />
+          </View>
+          <View style={styles.settingsText}>
+            <Text style={styles.settingsTitle}>Modifier mon profil</Text>
+            <Text style={styles.settingsDescription}>
+              Informations physiques et préférences
+            </Text>
+          </View>
+          <ChevronRight size={20} color={Colors.text.light} />
+        </View>
+      </TouchableOpacity>
+
       <Card style={styles.card}>
         <Text style={styles.sectionTitle}>Mes objectifs</Text>
         <View style={styles.infoRow}>
@@ -420,6 +439,48 @@ const styles = StyleSheet.create({
     marginBottom: Theme.spacing.xs,
   },
   supportDescription: {
+    fontSize: Theme.fontSize.sm,
+    color: Colors.text.secondary,
+  },
+  settingsCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  settingsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Theme.spacing.md,
+  },
+  settingsIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${Colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  settingsText: {
+    flex: 1,
+  },
+  settingsTitle: {
+    fontSize: Theme.fontSize.md,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Theme.spacing.xs,
+  },
+  settingsDescription: {
     fontSize: Theme.fontSize.sm,
     color: Colors.text.secondary,
   },
