@@ -67,16 +67,28 @@ Deno.serve(async (req: Request) => {
     console.log(`✅ Nouveau repas généré: ${newMeal.name}`);
 
     if (user_id) {
-      const { error: updateError } = await supabase
+      const { data: activePlan, error: fetchError } = await supabase
         .from("meal_plans")
-        .update({ shopping_list: null })
+        .select("id")
         .eq("user_id", user_id)
-        .eq("status", "active");
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (updateError) {
-        console.error("Erreur suppression cache liste:", updateError);
-      } else {
-        console.log("🗑️ Cache liste de courses supprimé");
+      if (fetchError) {
+        console.error("Erreur récupération plan actif:", fetchError);
+      } else if (activePlan) {
+        const { error: updateError } = await supabase
+          .from("meal_plans")
+          .update({ shopping_list: null })
+          .eq("id", activePlan.id);
+
+        if (updateError) {
+          console.error("Erreur suppression cache liste:", updateError);
+        } else {
+          console.log("🗑️ Cache liste de courses supprimé");
+        }
       }
     }
 

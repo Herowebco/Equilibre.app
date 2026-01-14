@@ -49,6 +49,8 @@ export default function DashboardScreen() {
         .limit(1)
         .maybeSingle();
 
+      console.log('📊 [DASHBOARD] Plan récupéré:', planData ? `ID: ${planData.id}, Date: ${planData.created_at}` : 'Aucun plan');
+
       if (planError) throw planError;
 
       if (planData) {

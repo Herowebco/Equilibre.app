@@ -175,11 +175,27 @@ export async function generateShoppingList(planData: MealPlan, userId: string): 
 
 export async function updateShoppingListItems(userId: string, shoppingList: ShoppingList): Promise<void> {
   try {
+    const { data: activePlan, error: fetchError } = await supabase
+      .from('meal_plans')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw new Error(fetchError.message || 'Failed to fetch active plan');
+    }
+
+    if (!activePlan) {
+      throw new Error('No active plan found');
+    }
+
     const { error } = await supabase
       .from('meal_plans')
       .update({ shopping_list: shoppingList })
-      .eq('user_id', userId)
-      .eq('status', 'active');
+      .eq('id', activePlan.id);
 
     if (error) {
       throw new Error(error.message || 'Failed to update shopping list');
