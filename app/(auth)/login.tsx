@@ -156,6 +156,20 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               </Link>
             </View>
+
+            <View style={styles.legalFooter}>
+              <Link href="/cgu" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.legalLink}>CGU</Text>
+                </TouchableOpacity>
+              </Link>
+              <Text style={styles.legalSeparator}>•</Text>
+              <Link href="/confidentialite" asChild>
+                <TouchableOpacity>
+                  <Text style={styles.legalLink}>Politique de confidentialité</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -287,5 +301,20 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.sm,
     color: Colors.primary,
     fontWeight: Theme.fontWeight.medium,
+  },
+  legalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: Theme.spacing.xl,
+    gap: 8,
+  },
+  legalLink: {
+    fontSize: 12,
+    color: Colors.text.light,
+  },
+  legalSeparator: {
+    fontSize: 12,
+    color: Colors.text.light,
   },
 });
