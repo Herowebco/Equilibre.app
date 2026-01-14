@@ -8,6 +8,7 @@ import {
   Platform,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { ScreenWrapper, Button } from '@/components';
@@ -125,8 +126,13 @@ export default function LoginScreen() {
               style={styles.googleButton}
               onPress={handleGoogleLogin}
               disabled={loading}
+              activeOpacity={0.9}
             >
-              <Text style={styles.googleButtonText}>Se connecter avec Google</Text>
+              <Image
+                source={{ uri: 'https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png' }}
+                style={styles.googleButtonImage}
+                resizeMode="contain"
+              />
             </TouchableOpacity>
 
             <View style={styles.footer}>
@@ -237,26 +243,13 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.medium,
   },
   googleButton: {
-    backgroundColor: Colors.white,
-    borderRadius: Theme.borderRadius.md,
-    padding: Theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignSelf: 'center',
   },
-  googleButtonText: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
+  googleButtonImage: {
+    width: 191,
+    height: 46,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
