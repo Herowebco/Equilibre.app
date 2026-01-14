@@ -89,10 +89,6 @@ export default function GroceriesScreen() {
         setCurrentPlan(data.plan_data as MealPlan);
         if (data.shopping_list) {
           setShoppingList(data.shopping_list as ShoppingList);
-        } else if (data.plan_data) {
-          setLoading(false);
-          await handleGenerateList(data.plan_data as MealPlan);
-          return;
         }
       }
     } catch (error) {
@@ -183,6 +179,31 @@ export default function GroceriesScreen() {
             <Text style={styles.emptyText}>
               Créez d'abord un plan de repas pour générer votre liste de courses.
             </Text>
+          </View>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
+  if (!shoppingList || getTotalItems() === 0) {
+    return (
+      <ScreenWrapper>
+        <View style={styles.container}>
+          <Text style={styles.title}>Liste de courses</Text>
+          <View style={styles.emptyContainer}>
+            <ShoppingBasket size={80} color={Colors.primary} strokeWidth={1.5} />
+            <Text style={styles.emptyTitle}>
+              Votre liste est prête à être créée
+            </Text>
+            <Text style={styles.emptyText}>
+              Générez automatiquement tous les ingrédients nécessaires pour vos repas de la semaine.
+            </Text>
+            <Button
+              title="Générer ma liste de courses"
+              onPress={() => handleGenerateList()}
+              style={styles.generateButton}
+              disabled={generating}
+            />
           </View>
         </View>
       </ScreenWrapper>
@@ -326,15 +347,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Theme.spacing.xl,
   },
+  emptyTitle: {
+    fontSize: Theme.fontSize.xl,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.text.primary,
+    textAlign: 'center',
+    marginTop: Theme.spacing.xl,
+    marginBottom: Theme.spacing.sm,
+  },
   emptyText: {
     fontSize: Theme.fontSize.md,
     color: Colors.text.secondary,
     textAlign: 'center',
-    marginTop: Theme.spacing.lg,
+    marginTop: Theme.spacing.sm,
     marginBottom: Theme.spacing.xl,
     lineHeight: 22,
+    paddingHorizontal: Theme.spacing.md,
   },
   generateButton: {
-    minWidth: 200,
+    minWidth: 250,
+    marginTop: Theme.spacing.md,
   },
 });
