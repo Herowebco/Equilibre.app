@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button, MealCard } from '@/components';
+import { ScreenWrapper, Card, Button, MealCard, PasswordSettings } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { User } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +25,34 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('info');
   const [favoriteMeals, setFavoriteMeals] = useState<FavoriteMeal[]>([]);
   const [loadingMeals, setLoadingMeals] = useState(false);
+  const [isEmailPasswordUser, setIsEmailPasswordUser] = useState(false);
+  const [checkingAuthProvider, setCheckingAuthProvider] = useState(true);
+
+  useEffect(() => {
+    const checkAuthProvider = async () => {
+      try {
+        const { data: { user: authUser }, error } = await supabase.auth.getUser();
+
+        if (error || !authUser) {
+          setCheckingAuthProvider(false);
+          return;
+        }
+
+        const identities = authUser.identities || [];
+        const hasEmailProvider = identities.some(
+          (identity) => identity.provider === 'email'
+        );
+
+        setIsEmailPasswordUser(hasEmailProvider);
+      } catch (error) {
+        console.error('Error checking auth provider:', error);
+      } finally {
+        setCheckingAuthProvider(false);
+      }
+    };
+
+    checkAuthProvider();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'favorites' && favorites.length > 0) {
@@ -106,6 +134,21 @@ export default function ProfileScreen() {
         <Text style={styles.sectionTitle}>Préférences alimentaires</Text>
         <Text style={styles.placeholder}>À définir dans l'onboarding</Text>
       </Card>
+
+      {!checkingAuthProvider && (
+        <>
+          {isEmailPasswordUser ? (
+            <PasswordSettings userEmail={user?.email || ''} />
+          ) : (
+            <Card style={styles.card}>
+              <Text style={styles.sectionTitle}>Mot de passe</Text>
+              <Text style={styles.oauthMessage}>
+                Vous êtes connecté via Google. La gestion du mot de passe se fait directement chez votre fournisseur d'authentification.
+              </Text>
+            </Card>
+          )}
+        </>
+      )}
 
       <Button
         title="Se déconnecter"
@@ -283,6 +326,11 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.md,
     color: Colors.text.light,
     fontStyle: 'italic',
+  },
+  oauthMessage: {
+    fontSize: Theme.fontSize.md,
+    color: Colors.text.secondary,
+    lineHeight: 22,
   },
   logoutButton: {
     marginTop: Theme.spacing.md,
