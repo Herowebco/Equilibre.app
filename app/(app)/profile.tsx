@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator }
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, MealCard, PasswordSettings } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { User } from 'lucide-react-native';
+import { User, HelpCircle, ChevronRight } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { supabase } from '@/lib/supabase';
@@ -149,6 +149,25 @@ export default function ProfileScreen() {
           )}
         </>
       )}
+
+      <TouchableOpacity
+        style={styles.supportCard}
+        onPress={() => router.push('/(app)/support')}
+        activeOpacity={0.7}
+      >
+        <View style={styles.supportContent}>
+          <View style={styles.supportIconContainer}>
+            <HelpCircle size={24} color={Colors.primary} />
+          </View>
+          <View style={styles.supportText}>
+            <Text style={styles.supportTitle}>Aide & Support</Text>
+            <Text style={styles.supportDescription}>
+              FAQ et contact support
+            </Text>
+          </View>
+          <ChevronRight size={20} color={Colors.text.light} />
+        </View>
+      </TouchableOpacity>
 
       <Button
         title="Se déconnecter"
@@ -361,5 +380,47 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  supportCard: {
+    backgroundColor: Colors.white,
+    borderRadius: Theme.borderRadius.md,
+    padding: Theme.spacing.md,
+    marginBottom: Theme.spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  supportContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Theme.spacing.md,
+  },
+  supportIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${Colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  supportText: {
+    flex: 1,
+  },
+  supportTitle: {
+    fontSize: Theme.fontSize.md,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Theme.spacing.xs,
+  },
+  supportDescription: {
+    fontSize: Theme.fontSize.sm,
+    color: Colors.text.secondary,
   },
 });

@@ -79,6 +79,12 @@ export default function AppLayout() {
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="support"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
