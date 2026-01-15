@@ -139,23 +139,6 @@ export default function ProfileScreen() {
         </View>
       </TouchableOpacity>
 
-      <Card style={styles.card}>
-        <Text style={styles.sectionTitle}>Mes objectifs</Text>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Objectif :</Text>
-          <Text style={styles.value}>À définir</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.label}>Poids actuel :</Text>
-          <Text style={styles.value}>À définir</Text>
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={styles.sectionTitle}>Préférences alimentaires</Text>
-        <Text style={styles.placeholder}>À définir dans l'onboarding</Text>
-      </Card>
-
       {!checkingAuthProvider && (
         <>
           {isEmailPasswordUser ? (
@@ -347,25 +330,6 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.bold,
     color: Colors.text.primary,
     marginBottom: Theme.spacing.md,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: Theme.spacing.sm,
-  },
-  label: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.secondary,
-  },
-  value: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  placeholder: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.light,
-    fontStyle: 'italic',
   },
   oauthMessage: {
     fontSize: Theme.fontSize.md,
