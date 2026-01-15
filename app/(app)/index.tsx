@@ -99,9 +99,25 @@ export default function DashboardScreen() {
   };
 
   const getCurrentDayIndex = (): number => {
+    if (!planCreatedAt) return 0;
+
+    const createdDate = new Date(planCreatedAt);
+    const today = new Date();
+
+    createdDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    const diffTime = today.getTime() - createdDate.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    return Math.max(0, diffDays) % 7;
+  };
+
+  const getCurrentDayName = (): string => {
     const today = new Date();
     const jsDay = today.getDay();
-    return (jsDay + 6) % 7;
+    const dayIndex = (jsDay + 6) % 7;
+    return DAYS_OF_WEEK[dayIndex];
   };
 
   const getTodayMeals = (): Meal[] => {
@@ -210,6 +226,7 @@ export default function DashboardScreen() {
   const todayMeals = getTodayMeals();
   const nutrition = getTodayNutrition();
   const dayIndex = getCurrentDayIndex();
+  const dayName = getCurrentDayName();
 
   return (
     <ScreenWrapper scrollable>
@@ -218,7 +235,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.title}>Tableau de bord</Text>
             <Text style={styles.subtitle}>
-              {DAYS_OF_WEEK[dayIndex]} - Jour {dayIndex + 1}
+              {dayName} - Jour {dayIndex + 1}
             </Text>
           </View>
         </View>
