@@ -99,14 +99,9 @@ export default function DashboardScreen() {
   };
 
   const getCurrentDayIndex = (): number => {
-    if (!planCreatedAt) return 0;
-
-    const createdDate = new Date(planCreatedAt);
     const today = new Date();
-    const diffTime = today.getTime() - createdDate.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    return Math.min(diffDays % 7, 6);
+    const jsDay = today.getDay();
+    return (jsDay + 6) % 7;
   };
 
   const getTodayMeals = (): Meal[] => {
