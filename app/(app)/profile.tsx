@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { ScreenWrapper, Card, Button, MealCard, PasswordSettings, WeightChart } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { User, HelpCircle, ChevronRight, Settings } from 'lucide-react-native';
@@ -27,6 +28,13 @@ export default function ProfileScreen() {
   const [loadingMeals, setLoadingMeals] = useState(false);
   const [isEmailPasswordUser, setIsEmailPasswordUser] = useState(false);
   const [checkingAuthProvider, setCheckingAuthProvider] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setRefreshTrigger((prev) => prev + 1);
+    }, [])
+  );
 
   useEffect(() => {
     const checkAuthProvider = async () => {
@@ -118,7 +126,7 @@ export default function ProfileScreen() {
 
   const renderInfoTab = () => (
     <>
-      <WeightChart />
+      <WeightChart key={refreshTrigger} />
 
       <TouchableOpacity
         style={styles.settingsCard}
