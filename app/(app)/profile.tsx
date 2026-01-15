@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ScreenWrapper, Card, Button, MealCard, PasswordSettings } from '@/components';
+import { ScreenWrapper, Card, Button, MealCard, PasswordSettings, WeightChart } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { User, HelpCircle, ChevronRight, Settings } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -118,6 +118,8 @@ export default function ProfileScreen() {
 
   const renderInfoTab = () => (
     <>
+      <WeightChart />
+
       <TouchableOpacity
         style={styles.settingsCard}
         onPress={() => router.push('/(app)/profile-settings')}

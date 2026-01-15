@@ -6,6 +6,7 @@ export { MealCard } from './MealCard';
 export { RecipeModal } from './RecipeModal';
 export { PasswordSettings } from './PasswordSettings';
 export { FAQItem } from './FAQItem';
+export { WeightChart } from './WeightChart';
 export { default as ProgressBar } from './ProgressBar';
 export { default as DailyTracker } from './DailyTracker';
 export { default as CircularProgress } from './CircularProgress';
