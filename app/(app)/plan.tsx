@@ -25,6 +25,7 @@ export default function PlanScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [loading, setLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(null);
+  const [planCreatedAt, setPlanCreatedAt] = useState<string | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
@@ -46,7 +47,7 @@ export default function PlanScreen() {
       setLoading(true);
       const { data, error } = await supabase
         .from('meal_plans')
-        .select('plan_data')
+        .select('plan_data, created_at')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -57,6 +58,7 @@ export default function PlanScreen() {
 
       if (data) {
         setCurrentPlan(data.plan_data as MealPlan);
+        setPlanCreatedAt(data.created_at);
       }
     } catch (error) {
       console.error('Error loading meal plan:', error);
@@ -117,6 +119,17 @@ export default function PlanScreen() {
     setRecipeDetails(null);
   };
 
+  const getDayName = (dayIndex: number): string => {
+    if (!planCreatedAt) return DAYS[dayIndex];
+
+    const startDate = new Date(planCreatedAt);
+    const dayDate = new Date(startDate);
+    dayDate.setDate(startDate.getDate() + dayIndex);
+
+    const dayName = dayDate.toLocaleDateString('fr-FR', { weekday: 'long' });
+    return dayName.charAt(0).toUpperCase() + dayName.slice(1);
+  };
+
   if (loading) {
     return (
       <ScreenWrapper>
@@ -154,7 +167,7 @@ export default function PlanScreen() {
 
         {currentPlan.days.map((dayData, index) => (
           <Card key={index} style={styles.card}>
-            <Text style={styles.dayTitle}>{DAYS[index]}</Text>
+            <Text style={styles.dayTitle}>{getDayName(index)}</Text>
             {dayData.meals && dayData.meals.length > 0 ? (
               dayData.meals.map((meal, mealIndex) => (
                 <MealCard
