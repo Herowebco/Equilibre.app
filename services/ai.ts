@@ -40,6 +40,8 @@ export interface MealPlan {
 
 export interface ShoppingItem {
   name: string;
+  amount?: number;
+  unit?: string;
   checked: boolean;
 }
 

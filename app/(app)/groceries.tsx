@@ -149,6 +149,20 @@ export default function GroceriesScreen() {
     );
   };
 
+  const formatItemQuantity = (item: any): string => {
+    const amount = item.amount && item.amount > 0 ? item.amount : '';
+    const unit = item.unit ? item.unit : '';
+    const name = item.name || '';
+
+    if (amount && unit) {
+      return `${amount} ${unit} ${name}`.trim();
+    } else if (amount) {
+      return `${amount} ${name}`.trim();
+    } else {
+      return name;
+    }
+  };
+
   if (loading || generating) {
     return (
       <ScreenWrapper>
@@ -255,7 +269,7 @@ export default function GroceriesScreen() {
                       item.checked && styles.itemTextChecked,
                     ]}
                   >
-                    {item.name}
+                    {formatItemQuantity(item)}
                   </Text>
                 </TouchableOpacity>
               ))}

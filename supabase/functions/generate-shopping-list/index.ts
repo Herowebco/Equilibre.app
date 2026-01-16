@@ -65,6 +65,14 @@ Deno.serve(async (req: Request) => {
       2. Additionner les quantités pour les mêmes items (ex: 200g riz + 300g riz = 500g riz)
       3. Grouper les ingrédients par rayon de supermarché
       4. Estimer les quantités manquantes de manière réaliste
+      5. Séparer la quantité, l'unité et le nom pour chaque ingrédient
+
+      RÈGLES IMPORTANTES :
+      - TOUJOURS fournir une quantité (amount) et une unité (unit) pour chaque ingrédient
+      - Pour les épices et condiments, utilise "1" et "pincée" ou "1" et "cuillère à soupe"
+      - Pour les aliments solides, utilise des grammes (g) ou kilogrammes (kg)
+      - Pour les liquides, utilise des millilitres (ml) ou litres (L)
+      - Pour les items comptables, utilise "pièce" ou "unité"
 
       RAYONS STANDARDS :
       - Fruits & Légumes
@@ -85,15 +93,15 @@ Deno.serve(async (req: Request) => {
           {
             "name": "Fruits & Légumes",
             "items": [
-              {"name": "Tomates (500g)", "checked": false},
-              {"name": "Salade (1 pièce)", "checked": false}
+              {"name": "Tomates", "amount": 500, "unit": "g", "checked": false},
+              {"name": "Salade", "amount": 1, "unit": "pièce", "checked": false}
             ]
           },
           {
             "name": "Boucherie & Poissonnerie",
             "items": [
-              {"name": "Poulet (400g)", "checked": false},
-              {"name": "Saumon (300g)", "checked": false}
+              {"name": "Poulet", "amount": 400, "unit": "g", "checked": false},
+              {"name": "Saumon", "amount": 300, "unit": "g", "checked": false}
             ]
           }
         ]
