@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  withSequence,
-} from 'react-native-reanimated';
+// Temporairement désactivé pour le débogage
+// import Animated, {
+//   useAnimatedStyle,
+//   useSharedValue,
+//   withRepeat,
+//   withTiming,
+//   withSequence,
+// } from 'react-native-reanimated';
 import { ChefHat } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
@@ -25,19 +26,21 @@ interface LoadingPlanGeneratorProps {
 
 export default function LoadingPlanGenerator({ visible = true }: LoadingPlanGeneratorProps) {
   const [messageIndex, setMessageIndex] = useState(0);
-  const bounceValue = useSharedValue(0);
+  // Temporairement désactivé pour le débogage
+  // const bounceValue = useSharedValue(0);
 
   useEffect(() => {
     if (!visible) return;
 
-    bounceValue.value = withRepeat(
-      withSequence(
-        withTiming(-10, { duration: 400 }),
-        withTiming(0, { duration: 400 })
-      ),
-      -1,
-      false
-    );
+    // Temporairement désactivé pour le débogage
+    // bounceValue.value = withRepeat(
+    //   withSequence(
+    //     withTiming(-10, { duration: 400 }),
+    //     withTiming(0, { duration: 400 })
+    //   ),
+    //   -1,
+    //   false
+    // );
 
     const interval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
@@ -46,18 +49,19 @@ export default function LoadingPlanGenerator({ visible = true }: LoadingPlanGene
     return () => clearInterval(interval);
   }, [visible]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: bounceValue.value }],
-  }));
+  // Temporairement désactivé pour le débogage
+  // const animatedStyle = useAnimatedStyle(() => ({
+  //   transform: [{ translateY: bounceValue.value }],
+  // }));
 
   if (!visible) return null;
 
   return (
     <View style={styles.overlay}>
       <View style={styles.container}>
-        <Animated.View style={[styles.iconContainer, animatedStyle]}>
+        <View style={styles.iconContainer}>
           <ChefHat size={64} color={Colors.primary} strokeWidth={2} />
-        </Animated.View>
+        </View>
         <Text style={styles.message}>{LOADING_MESSAGES[messageIndex]}</Text>
       </View>
     </View>
