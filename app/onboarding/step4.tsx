@@ -292,6 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Theme.spacing.sm,
+    marginBottom: Theme.spacing.lg,
   },
   dietCard: {
     flex: 1,
@@ -301,6 +302,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Theme.spacing.sm,
+    marginBottom: Theme.spacing.lg,
   },
   allergyChip: {
     paddingVertical: Theme.spacing.sm,
