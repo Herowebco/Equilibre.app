@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Button, SelectableCard, ProgressBar } from '@/components';
 import { Colors, Theme } from '@/constants';
@@ -92,6 +92,10 @@ export default function Step1Screen() {
   const isValid = age && height && weight && !errors.age && !errors.height && !errors.weight;
 
   return (
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoid}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
     <ScreenWrapper scrollable>
       <View style={styles.container}>
         <ProgressBar currentStep={1} totalSteps={4} />
@@ -170,10 +174,14 @@ export default function Step1Screen() {
         />
       </View>
     </ScreenWrapper>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: Theme.spacing.lg,

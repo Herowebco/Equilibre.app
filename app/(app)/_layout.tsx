@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
 import { Tabs, useRouter, useSegments, useRootNavigationState } from 'expo-router';
-import { Home, Calendar, ShoppingCart, User } from 'lucide-react-native';
+import { Hop as Home, Calendar, ShoppingCart, User } from 'lucide-react-native';
 import { Colors } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AppLayout() {
   const { isAuthenticated, loading, profileComplete } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const rootNavigationState = useRootNavigationState();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (!rootNavigationState?.key) return;
@@ -37,8 +39,8 @@ export default function AppLayout() {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
         },
         tabBarLabelStyle: {

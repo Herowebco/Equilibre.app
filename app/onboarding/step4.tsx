@@ -287,22 +287,22 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.medium,
     color: Colors.text.primary,
     marginBottom: Theme.spacing.md,
+    marginTop: 2,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Theme.spacing.sm,
-    marginBottom: Theme.spacing.lg,
   },
   dietCard: {
     flex: 1,
     minWidth: '45%',
+    minHeight: 56,
   },
   allergyGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Theme.spacing.sm,
-    marginBottom: Theme.spacing.lg,
   },
   allergyChip: {
     paddingVertical: Theme.spacing.sm,
