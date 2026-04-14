@@ -26,9 +26,7 @@ export function SocialAuthButtons({
   const [appleAvailable, setAppleAvailable] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-    }
+    setAppleAvailable(true);
   }, []);
 
   return (
