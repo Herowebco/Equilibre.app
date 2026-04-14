@@ -5,20 +5,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   Dimensions,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { LineChart } from 'react-native-chart-kit';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Theme } from '@/constants';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { TrendingDown, TrendingUp, Scale, Plus, X } from 'lucide-react-native';
+import { TrendingDown, TrendingUp, Scale } from 'lucide-react-native';
 
 interface WeightEntry {
   weight: number;
@@ -27,13 +19,8 @@ interface WeightEntry {
 
 export function WeightChart() {
   const { user } = useAuth();
-  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [weightData, setWeightData] = useState<WeightEntry[]>([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newWeight, setNewWeight] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [inputError, setInputError] = useState('');
 
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - Theme.spacing.lg * 2 - Theme.spacing.md * 2;
@@ -59,44 +46,6 @@ export function WeightChart() {
     } catch {
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAddWeight = async () => {
-    const parsed = parseFloat(newWeight.replace(',', '.'));
-    if (!newWeight || isNaN(parsed) || parsed <= 0 || parsed > 500) {
-      setInputError('Veuillez entrer un poids valide');
-      return;
-    }
-    if (!user) return;
-
-    setSaving(true);
-    setInputError('');
-
-    try {
-      const today = new Date().toISOString().split('T')[0];
-
-      const { error } = await supabase
-        .from('weight_history')
-        .upsert(
-          { user_id: user.id, weight: parsed, date: today },
-          { onConflict: 'user_id,date' }
-        );
-
-      if (error) throw error;
-
-      await supabase
-        .from('profiles')
-        .update({ weight: parsed })
-        .eq('id', user.id);
-
-      setModalVisible(false);
-      setNewWeight('');
-      await loadWeightHistory();
-    } catch {
-      setInputError('Une erreur est survenue');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -140,45 +89,35 @@ export function WeightChart() {
   }
 
   return (
-    <>
-      <View style={styles.glassCard}>
+    <View style={styles.glassCard}>
         <View style={styles.header}>
           <View style={styles.titleRow}>
             <Scale size={18} color={Colors.primary} strokeWidth={1.8} />
             <Text style={styles.title}>Suivi du poids</Text>
           </View>
-          <View style={styles.headerRight}>
-            {weightChange && (
-              <View
+          {weightChange && (
+            <View
+              style={[
+                styles.changeBadge,
+                { backgroundColor: weightChange.isDecrease ? `${Colors.success}18` : `${Colors.danger}18` },
+              ]}
+            >
+              {weightChange.isDecrease ? (
+                <TrendingDown size={13} color={Colors.success} strokeWidth={2} />
+              ) : (
+                <TrendingUp size={13} color={Colors.danger} strokeWidth={2} />
+              )}
+              <Text
                 style={[
-                  styles.changeBadge,
-                  { backgroundColor: weightChange.isDecrease ? `${Colors.success}18` : `${Colors.danger}18` },
+                  styles.changeText,
+                  { color: weightChange.isDecrease ? Colors.success : Colors.danger },
                 ]}
               >
-                {weightChange.isDecrease ? (
-                  <TrendingDown size={13} color={Colors.success} strokeWidth={2} />
-                ) : (
-                  <TrendingUp size={13} color={Colors.danger} strokeWidth={2} />
-                )}
-                <Text
-                  style={[
-                    styles.changeText,
-                    { color: weightChange.isDecrease ? Colors.success : Colors.danger },
-                  ]}
-                >
-                  {weightChange.isDecrease ? '-' : '+'}
-                  {weightChange.value.toFixed(1)} kg
-                </Text>
-              </View>
-            )}
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => setModalVisible(true)}
-              activeOpacity={0.75}
-            >
-              <Plus size={15} color={Colors.white} strokeWidth={2.5} />
-            </TouchableOpacity>
-          </View>
+                {weightChange.isDecrease ? '-' : '+'}
+                {weightChange.value.toFixed(1)} kg
+              </Text>
+            </View>
+          )}
         </View>
 
         {weightData.length < 2 ? (
@@ -187,14 +126,6 @@ export function WeightChart() {
             <Text style={styles.emptyText}>
               Enregistrez votre poids pour suivre votre progression.
             </Text>
-            <TouchableOpacity
-              style={styles.emptyAddButton}
-              onPress={() => setModalVisible(true)}
-              activeOpacity={0.8}
-            >
-              <Plus size={14} color={Colors.primary} strokeWidth={2.5} />
-              <Text style={styles.emptyAddText}>Ajouter mon poids</Text>
-            </TouchableOpacity>
           </View>
         ) : (
           <>
@@ -257,55 +188,7 @@ export function WeightChart() {
             </View>
           </>
         )}
-      </View>
-
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-          <Pressable style={styles.modalBackdrop} onPress={() => setModalVisible(false)} />
-          <View style={[styles.modalCard, { paddingBottom: Math.max(insets.bottom, Theme.spacing.lg) }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Ajouter mon poids</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                <X size={18} color={Colors.text.secondary} strokeWidth={2} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.modalLabel}>Poids aujourd'hui (kg)</Text>
-            <TextInput
-              style={[styles.input, inputError ? styles.inputError : null]}
-              placeholder="Ex : 72.5"
-              placeholderTextColor={Colors.text.light}
-              keyboardType="decimal-pad"
-              value={newWeight}
-              onChangeText={(t) => { setNewWeight(t); setInputError(''); }}
-              autoFocus
-            />
-            {inputError ? <Text style={styles.errorText}>{inputError}</Text> : null}
-
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleAddWeight}
-              activeOpacity={0.8}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-    </>
+    </View>
   );
 }
 
@@ -340,11 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: Theme.fontWeight.bold,
     color: Colors.text.primary,
   },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Theme.spacing.sm,
-  },
   changeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -356,14 +234,6 @@ const styles = StyleSheet.create({
   changeText: {
     fontSize: Theme.fontSize.xs,
     fontWeight: Theme.fontWeight.bold,
-  },
-  addButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   chartWrapper: {
     alignItems: 'center',
@@ -419,95 +289,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     paddingHorizontal: Theme.spacing.md,
-    marginBottom: Theme.spacing.lg,
-  },
-  emptyAddButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Theme.spacing.xs,
-    paddingHorizontal: Theme.spacing.lg,
-    paddingVertical: Theme.spacing.sm,
-    borderRadius: Theme.borderRadius.full,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-    backgroundColor: `${Colors.primary}12`,
-  },
-  emptyAddText: {
-    fontSize: Theme.fontSize.sm,
-    fontWeight: Theme.fontWeight.medium,
-    color: Colors.primary,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  modalCard: {
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: Theme.spacing.lg,
-    paddingTop: Theme.spacing.xl,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.lg,
-  },
-  modalTitle: {
-    fontSize: Theme.fontSize.lg,
-    fontWeight: Theme.fontWeight.bold,
-    color: Colors.text.primary,
-  },
-  closeBtn: {
-    padding: Theme.spacing.xs,
-  },
-  modalLabel: {
-    fontSize: Theme.fontSize.sm,
-    color: Colors.text.secondary,
-    marginBottom: Theme.spacing.sm,
-    fontWeight: Theme.fontWeight.medium,
-  },
-  input: {
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Theme.borderRadius.md,
-    paddingHorizontal: Theme.spacing.md,
-    paddingVertical: Theme.spacing.sm + 4,
-    fontSize: Theme.fontSize.lg,
-    color: Colors.text.primary,
-    marginBottom: Theme.spacing.sm,
-    textAlign: 'center',
-    fontWeight: Theme.fontWeight.medium,
-  },
-  inputError: {
-    borderColor: Colors.error,
-  },
-  errorText: {
-    fontSize: Theme.fontSize.xs,
-    color: Colors.error,
-    marginBottom: Theme.spacing.sm,
-    textAlign: 'center',
-  },
-  saveButton: {
-    backgroundColor: Colors.primary,
-    borderRadius: Theme.borderRadius.md,
-    paddingVertical: Theme.spacing.md,
-    alignItems: 'center',
-    marginTop: Theme.spacing.sm,
-  },
-  saveButtonText: {
-    fontSize: Theme.fontSize.md,
-    fontWeight: Theme.fontWeight.bold,
-    color: Colors.white,
   },
 });
