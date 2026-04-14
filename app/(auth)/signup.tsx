@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import { ScreenWrapper, Button } from '@/components';
+import { ScreenWrapper, Button, SocialAuthButtons } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
@@ -40,7 +40,7 @@ type FieldErrors = {
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, signInWithGoogle, signInWithApple } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,6 +86,33 @@ export default function SignupScreen() {
         setFieldErrors({
           email: errorMessage || "Une erreur est survenue lors de l'inscription"
         });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setFieldErrors({});
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+    } catch (err: any) {
+      setFieldErrors({ email: err.message || 'Une erreur est survenue avec Google' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    setFieldErrors({});
+    setLoading(true);
+    try {
+      await signInWithApple();
+      router.replace('/onboarding');
+    } catch (err: any) {
+      if (err.code !== 'ERR_REQUEST_CANCELED') {
+        setFieldErrors({ email: err.message || 'Une erreur est survenue avec Apple' });
       }
     } finally {
       setLoading(false);
@@ -179,6 +206,12 @@ export default function SignupScreen() {
               loading={loading}
               disabled={loading}
               style={styles.button}
+            />
+
+            <SocialAuthButtons
+              onGooglePress={handleGoogleSignup}
+              onApplePress={handleAppleSignup}
+              loading={loading}
             />
 
             <View style={styles.footer}>

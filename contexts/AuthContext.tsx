@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { User } from '@/types';
 import { Session } from '@supabase/supabase-js';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +13,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   checkProfileComplete: () => Promise<boolean>;
 }
@@ -160,6 +163,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithApple = async () => {
+    if (Platform.OS !== 'ios') {
+      throw new Error('La connexion avec Apple est uniquement disponible sur iOS.');
+    }
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    const identityToken = credential.identityToken;
+    if (!identityToken) {
+      throw new Error('Aucun token Apple reçu. Veuillez réessayer.');
+    }
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: identityToken,
+    });
+
+    if (error) throw error;
+
+    if (data.user) {
+      const fullName = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName]
+            .filter(Boolean)
+            .join(' ')
+        : data.user.user_metadata?.full_name;
+
+      setUser({
+        id: data.user.id,
+        email: data.user.email!,
+        name: fullName,
+      });
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('has_completed_onboarding')
+        .eq('id', data.user.id)
+        .maybeSingle();
+
+      const isComplete = !!profile?.has_completed_onboarding;
+      setProfileComplete(isComplete);
+    }
+  };
+
   const signInWithGoogle = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -191,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         signup,
         signInWithGoogle,
+        signInWithApple,
         logout,
         checkProfileComplete,
       }}

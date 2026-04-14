@@ -11,3 +11,4 @@ export { default as ProgressBar } from './ProgressBar';
 export { default as DailyTracker } from './DailyTracker';
 export { default as CircularProgress } from './CircularProgress';
 export { default as LoadingPlanGenerator } from './LoadingPlanGenerator';
+export { SocialAuthButtons } from './SocialAuthButtons';
