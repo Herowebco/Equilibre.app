@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { ScreenWrapper, Card, Button, DailyTracker, MealCard } from '@/components';
+import { ScreenWrapper, Card, Button, DailyTracker, MealCard, WeightChart } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFavorites } from '@/hooks/useFavorites';
@@ -239,6 +239,8 @@ export default function DashboardScreen() {
             </Text>
           </View>
         </View>
+
+        <WeightChart />
 
         <DailyTracker consumed={nutrition} goals={dailyGoals} />
 
