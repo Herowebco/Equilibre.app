@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenWrapper, Card, Button, MealCard, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
@@ -218,7 +219,7 @@ export default function ValidatePlanScreen() {
   }
 
   return (
-    <View style={styles.wrapper}>
+    <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Votre plan hebdomadaire</Text>
@@ -278,7 +279,7 @@ export default function ValidatePlanScreen() {
           disabled={loading || accepting}
         />
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
