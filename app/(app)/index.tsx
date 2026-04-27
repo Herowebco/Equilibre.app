@@ -168,13 +168,6 @@ export default function DashboardScreen() {
     }
   };
 
-  const getMealMacros = (meal: Meal) => ({
-    protein: meal.macros?.protein ?? meal.protein ?? 0,
-    carbs: meal.macros?.carbs ?? meal.carbs ?? 0,
-    fat: meal.macros?.fat ?? (meal as any).fats ?? 0,
-    calories: meal.calories ?? 0,
-  });
-
   const getTodayNutrition = () => {
     const meals = getTodayMeals();
     const dayIndex = getCurrentDayIndex();
@@ -184,12 +177,15 @@ export default function DashboardScreen() {
     return meals.reduce(
       (acc, meal, index) => {
         if (consumedIndices.includes(index)) {
-          const m = getMealMacros(meal);
+          const protein = meal.macros?.protein || meal.protein || 0;
+          const carbs = meal.macros?.carbs || meal.carbs || 0;
+          const fats = meal.macros?.fat || meal.fats || 0;
+
           return {
-            calories: acc.calories + m.calories,
-            protein: acc.protein + m.protein,
-            carbs: acc.carbs + m.carbs,
-            fats: acc.fats + m.fat,
+            calories: acc.calories + (meal.calories || 0),
+            protein: acc.protein + protein,
+            carbs: acc.carbs + carbs,
+            fats: acc.fats + fats,
           };
         }
         return acc;
@@ -251,25 +247,19 @@ export default function DashboardScreen() {
         <Card style={styles.card}>
           <Text style={styles.cardTitle}>Prochains repas</Text>
           {todayMeals.length > 0 ? (
-            todayMeals.map((meal, index) => {
-              const macros = getMealMacros(meal);
-              return (
-                <MealCard
-                  key={index}
-                  mealType={meal.type}
-                  mealName={meal.name}
-                  calories={macros.calories}
-                  protein={macros.protein}
-                  carbs={macros.carbs}
-                  fat={macros.fat}
-                  ingredients={meal.ingredients || []}
-                  isConsumed={isMealConsumed(index)}
-                  isFavorite={isFavorite(meal.name)}
-                  onToggleConsume={() => toggleMealConsumption(index)}
-                  onToggleFavorite={() => toggleFavorite(meal.name)}
-                />
-              );
-            })
+            todayMeals.map((meal, index) => (
+              <MealCard
+                key={index}
+                mealType={meal.type}
+                mealName={meal.name}
+                calories={meal.calories}
+                ingredients={meal.ingredients || []}
+                isConsumed={isMealConsumed(index)}
+                isFavorite={isFavorite(meal.name)}
+                onToggleConsume={() => toggleMealConsumption(index)}
+                onToggleFavorite={() => toggleFavorite(meal.name)}
+              />
+            ))
           ) : (
             <Text style={styles.cardText}>Aucun repas prévu</Text>
           )}
