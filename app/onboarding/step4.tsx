@@ -96,10 +96,19 @@ export default function Step4Screen() {
 
       console.log('📊 [BOUTON] Objectifs calculés:', dailyGoals);
 
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const userEmail = authData?.user?.email;
+      if (authError || !userEmail) {
+        console.error('🔴 [BOUTON] Email introuvable:', authError);
+        throw new Error('Session invalide. Veuillez vous reconnecter.');
+      }
+      console.log('📧 [BOUTON] Email récupéré:', userEmail);
+
       const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
+          email: userEmail,
           gender: finalData.gender,
           age: finalData.age,
           height: finalData.height,
