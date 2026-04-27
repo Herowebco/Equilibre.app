@@ -85,7 +85,19 @@ export async function generateMealPlan(
     });
 
     if (error) {
-      throw new Error(error.message || 'Failed to generate meal plan');
+      let detail = error.message || 'Failed to generate meal plan';
+      try {
+        const ctx: any = (error as any).context;
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.json();
+          if (body?.error) detail = body.error;
+        } else if (ctx && typeof ctx.text === 'function') {
+          const txt = await ctx.text();
+          if (txt) detail = txt;
+        }
+      } catch {}
+      console.error('🔴 [generateMealPlan] Détail erreur:', detail);
+      throw new Error(detail);
     }
 
     if (!data) {
