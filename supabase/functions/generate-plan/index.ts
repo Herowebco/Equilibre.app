@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet} - Target: ${targetCalories} kcal`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    const models = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-pro-latest"];
 
     const systemPrompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
 
@@ -95,16 +95,30 @@ OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
   ]
 }`;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }),
-    });
+    let response: Response | null = null;
+    let lastErr = "";
+    outer: for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const r = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }),
+        });
+        if (r.ok) {
+          response = r;
+          console.log(`✅ Modèle utilisé: ${model} (tentative ${attempt + 1})`);
+          break outer;
+        }
+        lastErr = `${model} ${r.status}: ${await r.text()}`;
+        console.warn(`⚠️ ${lastErr}`);
+        if (r.status !== 503 && r.status !== 429 && r.status !== 500) break;
+        await new Promise((res) => setTimeout(res, 1000 * (attempt + 1)));
+      }
+    }
 
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.error(`❌ Gemini ${response.status}:`, errBody);
-      throw new Error(`Gemini API ${response.status}: ${errBody}`);
+    if (!response) {
+      throw new Error(`Gemini indisponible après plusieurs tentatives. Dernier: ${lastErr}`);
     }
 
     const data = await response.json();
