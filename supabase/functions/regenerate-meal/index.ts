@@ -29,7 +29,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🔄 Régénération repas - Type: ${mealType} - Diet: ${finalDiet}`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
     const systemPrompt = `
       Tu es nutritionniste. Remplace ce repas : "${currentMeal.name}" par une alternative équivalente mais DIFFÉRENTE.
 

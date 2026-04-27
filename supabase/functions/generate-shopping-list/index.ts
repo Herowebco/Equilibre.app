@@ -55,7 +55,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🛍 Génération liste de courses pour ${planData.days.length} jours`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
     const systemPrompt = `
       Tu es un assistant ménager expert. Analyse ce plan de repas complet de 7 jours.
