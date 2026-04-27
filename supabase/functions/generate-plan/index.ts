@@ -26,30 +26,74 @@ Deno.serve(async (req: Request) => {
 
     const finalDiet = diet || userProfile?.dietary_preferences?.diet_type || userProfile?.diet || "standard";
     const finalAllergies = allergies || userProfile?.dietary_preferences?.allergies || userProfile?.allergies || [];
+    const mealsPerDay = userProfile?.dietary_preferences?.meals_per_day || 3;
     const userId = user_id || userProfile?.id;
 
-    console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet}`);
+    // Fetch daily goals from profile in DB if not provided in the request
+    let dailyGoals = userProfile?.daily_goals;
+    if (!dailyGoals && userId) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("daily_goals")
+        .eq("id", userId)
+        .maybeSingle();
+      if (profileData?.daily_goals) {
+        dailyGoals = profileData.daily_goals;
+      }
+    }
+
+    const targetCalories = dailyGoals?.calories || 2000;
+    const targetProtein = dailyGoals?.protein || 150;
+    const targetCarbs = dailyGoals?.carbs || 200;
+    const targetFats = dailyGoals?.fats || 65;
+
+    // Distribute calories across meals
+    const breakfastCal = Math.round(targetCalories * 0.25);
+    const snackCal = mealsPerDay === 4 ? Math.round(targetCalories * 0.10) : 0;
+    const lunchCal = Math.round(targetCalories * (mealsPerDay === 4 ? 0.35 : 0.40));
+    const dinnerCal = targetCalories - breakfastCal - snackCal - lunchCal;
+
+    const mealTypesInstruction = mealsPerDay === 4
+      ? `4 repas: breakfast (${breakfastCal} kcal), snack (${snackCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`
+      : `3 repas: breakfast (${breakfastCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`;
+
+    console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet} - Target: ${targetCalories} kcal`);
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
-    const systemPrompt = `
-      Tu es nutritionniste. Crée un plan de 7 jours JSON STRICT.
-      PROFIL: ${finalDiet}. ALLERGIES: ${JSON.stringify(finalAllergies)}.
-      RÈGLE: Si Végétarien = ZÉRO VIANDE/POISSON.
-      OUTPUT JSON SEULEMENT:
-      {
-        "days": [
-          {
-            "day_number": 1,
-            "meals": [
-              { "type": "breakfast", "name": "...", "calories": 400, "ingredients": ["..."], "macros": {"protein": 20, "carbs": 50, "fat": 10} },
-              { "type": "lunch", "name": "...", "calories": 0, "ingredients": [] },
-              { "type": "snack", "name": "...", "calories": 0, "ingredients": [] },
-              { "type": "dinner", "name": "...", "calories": 0, "ingredients": [] }
-            ]
-          }
-        ]
-      }
-    `;
+
+    const systemPrompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
+
+PROFIL UTILISATEUR:
+- Régime: ${finalDiet}
+- Allergies: ${finalAllergies.length > 0 ? finalAllergies.join(", ") : "Aucune"}
+
+OBJECTIFS NUTRITIONNELS QUOTIDIENS OBLIGATOIRES:
+- Calories: EXACTEMENT ${targetCalories} kcal par jour (±50 kcal toléré)
+- Protéines: ${targetProtein}g par jour
+- Glucides: ${targetCarbs}g par jour
+- Lipides: ${targetFats}g par jour
+
+RÈGLES ABSOLUES:
+1. La SOMME des calories de tous les repas d'une journée DOIT être égale à ${targetCalories} kcal.
+2. Chaque jour contient EXACTEMENT ${mealsPerDay} repas avec cette répartition: ${mealTypesInstruction}
+3. Ajuste les portions pour atteindre exactement les calories cibles.
+4. Si Végétarien ou Vegan = ZÉRO VIANDE, ZÉRO POISSON.
+5. Chaque repas DOIT avoir des macros (protein, carbs, fat) réalistes.
+
+OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
+{
+  "days": [
+    {
+      "day_number": 1,
+      "meals": [
+        { "type": "breakfast", "name": "...", "calories": ${breakfastCal}, "ingredients": ["..."], "macros": {"protein": 25, "carbs": 55, "fat": 12} }${mealsPerDay === 4 ? `,
+        { "type": "snack", "name": "...", "calories": ${snackCal}, "ingredients": ["..."], "macros": {"protein": 8, "carbs": 15, "fat": 3} }` : ""},
+        { "type": "lunch", "name": "...", "calories": ${lunchCal}, "ingredients": ["..."], "macros": {"protein": 40, "carbs": 70, "fat": 18} },
+        { "type": "dinner", "name": "...", "calories": ${dinnerCal}, "ingredients": ["..."], "macros": {"protein": 45, "carbs": 60, "fat": 22} }
+      ]
+    }
+  ]
+}`;
 
     const response = await fetch(url, {
       method: "POST",
