@@ -83,18 +83,28 @@ export default function DashboardScreen() {
   const generateShoppingListInBackground = async (planId: string, planData: MealPlan) => {
     if (!user) return;
 
-    try {
-      console.log('🛒 [BACKGROUND] Génération de la liste de courses en arrière-plan...');
-      const shoppingList = await generateShoppingList(planData, user.id);
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`[BACKGROUND] Génération liste de courses (tentative ${attempt}/${maxAttempts})...`);
+        const shoppingList = await generateShoppingList(planData, user.id);
 
-      await supabase
-        .from('meal_plans')
-        .update({ shopping_list: shoppingList })
-        .eq('id', planId);
+        await supabase
+          .from('meal_plans')
+          .update({ shopping_list: shoppingList })
+          .eq('id', planId);
 
-      console.log('✅ [BACKGROUND] Liste de courses générée et sauvegardée');
-    } catch (error) {
-      console.error('❌ [BACKGROUND] Erreur lors de la génération:', error);
+        console.log('[BACKGROUND] Liste de courses générée et sauvegardée');
+        return;
+      } catch (error: any) {
+        const message = error?.message || String(error);
+        console.warn(`[BACKGROUND] Tentative ${attempt} échouée: ${message}`);
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, 1500 * attempt));
+        } else {
+          console.warn('[BACKGROUND] Abandon génération liste de courses (sera retentée plus tard)');
+        }
+      }
     }
   };
 
