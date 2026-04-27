@@ -100,6 +100,7 @@ export default function Step4Screen() {
         .from('profiles')
         .upsert({
           id: user.id,
+          email: user.email,
           gender: finalData.gender,
           age: finalData.age,
           height: finalData.height,
