@@ -174,7 +174,10 @@ export default function PlanScreen() {
                   key={mealIndex}
                   mealType={meal.type}
                   mealName={meal.name}
-                  calories={meal.calories}
+                  calories={meal.calories ?? 0}
+                  protein={meal.macros?.protein ?? meal.protein}
+                  carbs={meal.macros?.carbs ?? meal.carbs}
+                  fat={meal.macros?.fat ?? (meal as any).fats}
                   ingredients={meal.ingredients || []}
                   isFavorite={isFavorite(meal.name)}
                   onPress={() => handleMealClick(meal)}

@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { RefreshCw, ChevronRight, CheckCircle, Circle, Heart } from 'lucide-react-native';
+import { RefreshCw, ChevronRight, CircleCheck as CheckCircle, Circle, Heart } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 interface MealCardProps {
   mealType: string;
   mealName: string;
   calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
   ingredients: string[];
   isConsumed?: boolean;
   isFavorite?: boolean;
@@ -20,6 +23,9 @@ export function MealCard({
   mealType,
   mealName,
   calories,
+  protein,
+  carbs,
+  fat,
   ingredients,
   isConsumed = false,
   isFavorite = false,
@@ -28,6 +34,7 @@ export function MealCard({
   onToggleConsume,
   onToggleFavorite,
 }: MealCardProps) {
+  const hasMacros = protein !== undefined || carbs !== undefined || fat !== undefined;
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [optimisticFavorite, setOptimisticFavorite] = useState(isFavorite);
@@ -104,6 +111,26 @@ export function MealCard({
           <ChevronRight size={20} color={isConsumed ? Colors.text.light : Colors.primary} />
         )}
       </TouchableOpacity>
+
+      {hasMacros && (
+        <View style={styles.macrosRow}>
+          {protein !== undefined && (
+            <View style={styles.macroBadge}>
+              <Text style={[styles.macroBadgeText, { color: '#4ECDC4' }]}>P {Math.round(protein)}g</Text>
+            </View>
+          )}
+          {carbs !== undefined && (
+            <View style={styles.macroBadge}>
+              <Text style={[styles.macroBadgeText, { color: '#F5A623' }]}>G {Math.round(carbs)}g</Text>
+            </View>
+          )}
+          {fat !== undefined && (
+            <View style={styles.macroBadge}>
+              <Text style={[styles.macroBadgeText, { color: '#FF6B9D' }]}>L {Math.round(fat)}g</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {ingredients && ingredients.length > 0 && (
         <TouchableOpacity
@@ -200,6 +227,21 @@ const styles = StyleSheet.create({
   mealNameConsumed: {
     textDecorationLine: 'line-through',
     color: Colors.text.light,
+  },
+  macrosRow: {
+    flexDirection: 'row',
+    gap: Theme.spacing.xs,
+    marginBottom: Theme.spacing.xs,
+  },
+  macroBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    backgroundColor: Colors.background,
+  },
+  macroBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   ingredients: {
     fontSize: Theme.fontSize.sm,
