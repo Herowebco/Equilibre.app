@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet} - Target: ${targetCalories} kcal`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
     const systemPrompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
 
