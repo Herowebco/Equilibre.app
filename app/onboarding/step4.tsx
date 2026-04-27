@@ -304,8 +304,8 @@ const styles = StyleSheet.create({
     gap: Theme.spacing.sm,
   },
   dietCard: {
-    flex: 1,
-    minWidth: '45%',
+    flexBasis: '48%',
+    flexGrow: 1,
     minHeight: 56,
   },
   allergyGrid: {
