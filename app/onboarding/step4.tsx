@@ -133,7 +133,6 @@ export default function Step4Screen() {
           allergies: finalData.allergies,
           meals_per_day: finalData.meals_per_day,
         },
-        daily_goals: dailyGoals,
       };
 
       console.log('💾 [BOUTON] Sauvegarde dans AsyncStorage...');

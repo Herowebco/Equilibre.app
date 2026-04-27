@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { RefreshCw, ChevronRight, CircleCheck as CheckCircle, Circle, Heart } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { RefreshCw, ChevronRight, CheckCircle, Circle, Heart } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 interface MealCardProps {
   mealType: string;
   mealName: string;
   calories: number;
-  protein?: number;
-  carbs?: number;
-  fat?: number;
   ingredients: string[];
   isConsumed?: boolean;
   isFavorite?: boolean;
@@ -23,9 +20,6 @@ export function MealCard({
   mealType,
   mealName,
   calories,
-  protein,
-  carbs,
-  fat,
   ingredients,
   isConsumed = false,
   isFavorite = false,
@@ -49,18 +43,24 @@ export function MealCard({
   };
 
   const ingredientsText = ingredients.join(', ');
-  const hasMacros = protein !== undefined || carbs !== undefined || fat !== undefined;
 
   return (
     <View style={[styles.mealItem, isConsumed && styles.mealItemConsumed]}>
       <View style={styles.mealHeader}>
         <View style={styles.mealInfo}>
-          <Text style={styles.mealType}>{mealType}</Text>
-          <Text style={styles.mealCalories}>{calories} kcal</Text>
+          <Text style={[styles.mealType, isConsumed && styles.consumedText]}>
+            {mealType}
+          </Text>
+          <Text style={[styles.mealCalories, isConsumed && styles.consumedText]}>
+            {calories} kcal
+          </Text>
         </View>
         <View style={styles.actionsContainer}>
           {onToggleFavorite && (
-            <TouchableOpacity style={styles.favoriteButton} onPress={handleFavoritePress}>
+            <TouchableOpacity
+              style={styles.favoriteButton}
+              onPress={handleFavoritePress}
+            >
               <Heart
                 size={20}
                 color={optimisticFavorite ? '#e74c3c' : Colors.text.light}
@@ -81,7 +81,10 @@ export function MealCard({
             </TouchableOpacity>
           )}
           {onRegenerate && !isConsumed && (
-            <TouchableOpacity style={styles.replaceButton} onPress={onRegenerate}>
+            <TouchableOpacity
+              style={styles.replaceButton}
+              onPress={onRegenerate}
+            >
               <RefreshCw size={18} color={Colors.primary} />
             </TouchableOpacity>
           )}
@@ -94,40 +97,19 @@ export function MealCard({
         disabled={!onPress}
         activeOpacity={0.7}
       >
-        <Text style={styles.mealName}>{mealName}</Text>
+        <Text style={[styles.mealName, isConsumed && styles.mealNameConsumed]}>
+          {mealName}
+        </Text>
         {onPress && (
-          <ChevronRight size={20} color={Colors.primary} />
+          <ChevronRight size={20} color={isConsumed ? Colors.text.light : Colors.primary} />
         )}
       </TouchableOpacity>
 
-      {hasMacros && (
-        <View style={styles.macrosRow}>
-          {protein !== undefined && (
-            <View style={[styles.macroBadge, styles.macroBadgeProtein]}>
-              <Text style={[styles.macroBadgeText, styles.macroBadgeTextProtein]}>
-                P {Math.round(protein)}g
-              </Text>
-            </View>
-          )}
-          {carbs !== undefined && (
-            <View style={[styles.macroBadge, styles.macroBadgeCarbs]}>
-              <Text style={[styles.macroBadgeText, styles.macroBadgeTextCarbs]}>
-                G {Math.round(carbs)}g
-              </Text>
-            </View>
-          )}
-          {fat !== undefined && (
-            <View style={[styles.macroBadge, styles.macroBadgeFat]}>
-              <Text style={[styles.macroBadgeText, styles.macroBadgeTextFat]}>
-                L {Math.round(fat)}g
-              </Text>
-            </View>
-          )}
-        </View>
-      )}
-
       {ingredients && ingredients.length > 0 && (
-        <TouchableOpacity activeOpacity={0.7} onPress={() => setIsExpanded(!isExpanded)}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => setIsExpanded(!isExpanded)}
+        >
           <Text
             style={styles.ingredients}
             numberOfLines={isExpanded ? undefined : 2}
@@ -157,7 +139,7 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
   },
   mealItemConsumed: {
-    backgroundColor: '#F8FFF8',
+    opacity: 0.6,
   },
   mealHeader: {
     flexDirection: 'row',
@@ -180,6 +162,9 @@ const styles = StyleSheet.create({
   mealCalories: {
     fontSize: Theme.fontSize.sm,
     color: Colors.text.secondary,
+  },
+  consumedText: {
+    color: Colors.text.light,
   },
   actionsContainer: {
     flexDirection: 'row',
@@ -212,37 +197,9 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontWeight: Theme.fontWeight.medium,
   },
-  macrosRow: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: Theme.spacing.xs,
-  },
-  macroBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  macroBadgeProtein: {
-    backgroundColor: '#E8FAF9',
-  },
-  macroBadgeCarbs: {
-    backgroundColor: '#FFF9E6',
-  },
-  macroBadgeFat: {
-    backgroundColor: '#FFF0F6',
-  },
-  macroBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  macroBadgeTextProtein: {
-    color: '#2BBDB4',
-  },
-  macroBadgeTextCarbs: {
-    color: '#C8962A',
-  },
-  macroBadgeTextFat: {
-    color: '#D9507A',
+  mealNameConsumed: {
+    textDecorationLine: 'line-through',
+    color: Colors.text.light,
   },
   ingredients: {
     fontSize: Theme.fontSize.sm,
