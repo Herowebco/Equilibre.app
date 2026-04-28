@@ -180,12 +180,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error('Aucun token Apple reçu. Veuillez réessayer.');
     }
 
+    try {
+      const payload = JSON.parse(
+        atob(identityToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))
+      );
+      console.log('[Apple Sign-In] Token audience (aud):', payload.aud);
+      console.log('[Apple Sign-In] Token issuer (iss):', payload.iss);
+    } catch (e) {
+      console.warn('[Apple Sign-In] Impossible de décoder le token:', e);
+    }
+
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'apple',
       token: identityToken,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Apple Sign-In] Erreur Supabase:', error);
+      throw error;
+    }
 
     if (data.user) {
       const fullName = credential.fullName
