@@ -55,8 +55,6 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🛍 Génération liste de courses pour ${planData.days.length} jours`);
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
     const systemPrompt = `
       Tu es un assistant ménager expert. Analyse ce plan de repas complet de 7 jours.
 
@@ -108,26 +106,66 @@ Deno.serve(async (req: Request) => {
       }
     `;
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: systemPrompt }]
-        }]
-      }),
-    });
+    const models = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-pro-latest"];
+    let text = "";
+    let lastError = "";
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Gemini API error: ${errorText}`);
+    for (const model of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+            generationConfig: {
+              responseMimeType: "application/json",
+              temperature: 0.4,
+            },
+          }),
+        });
+
+        if (!response.ok) {
+          lastError = await response.text();
+          console.warn(`Modèle ${model} a échoué (${response.status}): ${lastError.slice(0, 200)}`);
+          continue;
+        }
+
+        const data = await response.json();
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        if (text) {
+          console.log(`Réponse obtenue via ${model}`);
+          break;
+        }
+        lastError = "Réponse vide";
+      } catch (err) {
+        lastError = err instanceof Error ? err.message : String(err);
+        console.warn(`Erreur fetch ${model}: ${lastError}`);
+      }
     }
 
-    const data = await response.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    if (!text) {
+      throw new Error(`Tous les modèles Gemini ont échoué. Dernière erreur: ${lastError}`);
+    }
 
-    const shoppingList = JSON.parse(text);
+    text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const firstBrace = text.indexOf("{");
+    const lastBrace = text.lastIndexOf("}");
+    if (firstBrace !== -1 && lastBrace !== -1) {
+      text = text.slice(firstBrace, lastBrace + 1);
+    }
+
+    let shoppingList;
+    try {
+      shoppingList = JSON.parse(text);
+    } catch (parseError) {
+      console.error("Erreur parse JSON:", parseError, "Texte reçu:", text.slice(0, 500));
+      throw new Error("Réponse invalide du générateur");
+    }
+
+    if (!shoppingList?.categories || !Array.isArray(shoppingList.categories)) {
+      throw new Error("Structure de la liste invalide");
+    }
 
     console.log(`✅ Liste générée avec ${shoppingList.categories?.length || 0} catégories`);
 
