@@ -104,7 +104,8 @@ export default function LoginScreen() {
                 placeholderTextColor={Colors.text.light}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoComplete="email"
+                textContentType="emailAddress"
+                autoComplete="off"
                 editable={!loading}
               />
             </View>
@@ -119,6 +120,8 @@ export default function LoginScreen() {
                 placeholderTextColor={Colors.text.light}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
                 editable={!loading}
               />
               <Link href="/(auth)/forgot-password" asChild>

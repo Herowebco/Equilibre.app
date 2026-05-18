@@ -154,6 +154,8 @@ export default function ResetPasswordScreen() {
                 placeholderTextColor={Colors.text.light}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
                 editable={!loading}
               />
             </View>
@@ -168,6 +170,8 @@ export default function ResetPasswordScreen() {
                 placeholderTextColor={Colors.text.light}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
                 editable={!loading}
               />
             </View>

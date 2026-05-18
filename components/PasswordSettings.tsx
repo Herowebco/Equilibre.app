@@ -118,6 +118,8 @@ export function PasswordSettings({ userEmail }: PasswordSettingsProps) {
           placeholderTextColor={Colors.text.light}
           secureTextEntry
           autoCapitalize="none"
+          textContentType="oneTimeCode"
+          autoComplete="off"
           editable={!loading}
         />
         {fieldErrors.oldPassword && (
@@ -135,6 +137,8 @@ export function PasswordSettings({ userEmail }: PasswordSettingsProps) {
           placeholderTextColor={Colors.text.light}
           secureTextEntry
           autoCapitalize="none"
+          textContentType="oneTimeCode"
+          autoComplete="off"
           editable={!loading}
         />
         {fieldErrors.newPassword && (
@@ -151,6 +155,8 @@ export function PasswordSettings({ userEmail }: PasswordSettingsProps) {
           placeholder="••••••••"
           placeholderTextColor={Colors.text.light}
           secureTextEntry
+          textContentType="oneTimeCode"
+          autoComplete="off"
           autoCapitalize="none"
           editable={!loading}
         />

@@ -141,6 +141,8 @@ export default function SignupScreen() {
                 placeholder="Jean Dupont"
                 placeholderTextColor={Colors.text.light}
                 autoCapitalize="words"
+                textContentType="name"
+                autoComplete="off"
                 editable={!loading}
               />
               {fieldErrors.fullName && (
@@ -158,7 +160,8 @@ export default function SignupScreen() {
                 placeholderTextColor={Colors.text.light}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoComplete="email"
+                textContentType="emailAddress"
+                autoComplete="off"
                 editable={!loading}
               />
               {fieldErrors.email && (
@@ -176,6 +179,8 @@ export default function SignupScreen() {
                 placeholderTextColor={Colors.text.light}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
                 editable={!loading}
               />
               {fieldErrors.password && (
@@ -193,6 +198,8 @@ export default function SignupScreen() {
                 placeholderTextColor={Colors.text.light}
                 secureTextEntry
                 autoCapitalize="none"
+                textContentType="oneTimeCode"
+                autoComplete="off"
                 editable={!loading}
               />
               {fieldErrors.confirmPassword && (

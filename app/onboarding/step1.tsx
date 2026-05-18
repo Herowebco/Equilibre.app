@@ -135,6 +135,8 @@ export default function Step1Screen() {
               placeholder="25"
               placeholderTextColor={Colors.text.light}
               keyboardType="number-pad"
+              textContentType="none"
+              autoComplete="off"
             />
             {errors.age ? <Text style={styles.errorText}>{errors.age}</Text> : null}
           </View>
@@ -148,6 +150,8 @@ export default function Step1Screen() {
               placeholder="170"
               placeholderTextColor={Colors.text.light}
               keyboardType="decimal-pad"
+              textContentType="none"
+              autoComplete="off"
             />
             {errors.height ? <Text style={styles.errorText}>{errors.height}</Text> : null}
           </View>
@@ -161,6 +165,8 @@ export default function Step1Screen() {
               placeholder="70"
               placeholderTextColor={Colors.text.light}
               keyboardType="decimal-pad"
+              textContentType="none"
+              autoComplete="off"
             />
             {errors.weight ? <Text style={styles.errorText}>{errors.weight}</Text> : null}
           </View>

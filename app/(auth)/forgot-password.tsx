@@ -107,7 +107,8 @@ export default function ForgotPasswordScreen() {
                 placeholderTextColor={Colors.text.light}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoComplete="email"
+                textContentType="emailAddress"
+                autoComplete="off"
                 editable={!loading}
               />
             </View>
