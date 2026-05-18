@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import { ScreenWrapper, Card, Button, SelectableCard, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
-import { ArrowLeft, Save, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, Save, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
@@ -390,14 +390,14 @@ export default function ProfileSettingsScreen() {
 
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Objectif</Text>
-          <View style={styles.optionsGrid}>
+          <View style={styles.goalsGrid}>
             {GOALS.map((goal) => (
               <SelectableCard
                 key={goal.id}
                 title={goal.label}
                 selected={profileData.goal === goal.id}
                 onPress={() => setProfileData({ ...profileData, goal: goal.id })}
-                style={styles.optionCard}
+                style={styles.goalCard}
               />
             ))}
           </View>
@@ -602,6 +602,13 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  goalsGrid: {
+    flexDirection: 'row',
+    gap: Theme.spacing.sm,
+  },
+  goalCard: {
+    flex: 1,
   },
   optionsGrid: {
     flexDirection: 'row',
