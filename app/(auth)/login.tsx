@@ -7,6 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { ScreenWrapper, Button, SocialAuthButtons } from '@/components';
@@ -32,7 +34,6 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
-      router.replace('/(app)');
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de la connexion');
     } finally {
@@ -76,7 +77,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScreenWrapper scrollable>
+    <ScreenWrapper>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -170,6 +172,7 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      </TouchableWithoutFeedback>
     </ScreenWrapper>
   );
 }
@@ -181,7 +184,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    padding: Theme.spacing.lg,
+    paddingHorizontal: Theme.spacing.lg,
+    paddingVertical: Theme.spacing.xxl,
   },
   header: {
     alignItems: 'center',

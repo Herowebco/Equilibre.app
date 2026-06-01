@@ -23,10 +23,6 @@ export default function AuthLayout() {
     }
   }, [isAuthenticated, loading, profileComplete, segments, rootNavigationState?.key]);
 
-  if (loading) {
-    return null;
-  }
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />

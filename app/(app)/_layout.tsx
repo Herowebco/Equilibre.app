@@ -26,10 +26,6 @@ export default function AppLayout() {
     }
   }, [isAuthenticated, loading, profileComplete, segments, rootNavigationState?.key]);
 
-  if (loading) {
-    return null;
-  }
-
   return (
     <Tabs
       screenOptions={{

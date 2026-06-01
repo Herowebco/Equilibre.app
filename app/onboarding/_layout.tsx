@@ -22,10 +22,6 @@ export default function OnboardingLayout() {
     }
   }, [isAuthenticated, loading, profileComplete, segments, rootNavigationState?.key]);
 
-  if (loading) {
-    return null;
-  }
-
   return (
     <OnboardingProvider>
       <Stack screenOptions={{ headerShown: false }}>
