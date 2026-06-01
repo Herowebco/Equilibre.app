@@ -12,19 +12,21 @@ import { ChefHat } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
 const LOADING_MESSAGES = [
-  "Analyse de vos préférences alimentaires...",
-  "Calcul de vos besoins caloriques journaliers...",
-  "Recherche de recettes saines et gourmandes...",
-  "Équilibrage des macronutriments (Protéines, Glucides, Lipides)...",
-  "Ajustement des portions pour votre objectif...",
-  "Dressage final de votre menu de la semaine !",
+  'Analyse de vos préférences alimentaires...',
+  'Calcul de vos besoins caloriques journaliers...',
+  'Recherche de recettes saines et gourmandes...',
+  'Équilibrage des macronutriments (Protéines, Glucides, Lipides)...',
+  'Ajustement des portions pour votre objectif...',
+  'Dressage final de votre menu de la semaine !',
 ];
 
 interface LoadingPlanGeneratorProps {
   visible?: boolean;
 }
 
-export default function LoadingPlanGenerator({ visible = true }: LoadingPlanGeneratorProps) {
+export default function LoadingPlanGenerator({
+  visible = true,
+}: LoadingPlanGeneratorProps) {
   const [messageIndex, setMessageIndex] = useState(0);
   // Temporairement désactivé pour le débogage
   // const bounceValue = useSharedValue(0);

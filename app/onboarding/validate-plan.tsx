@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,19 @@ import {
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ScreenWrapper, Card, Button, MealCard, LoadingPlanGenerator } from '@/components';
+import {
+  ScreenWrapper,
+  Card,
+  Button,
+  MealCard,
+  LoadingPlanGenerator,
+} from '@/components';
 import { Colors, Theme } from '@/constants';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, Meal } from '@/services/ai';
-import { regenerateMeal } from '@/services/ai';
+import { regenerateMeal, generateMealPlan } from '@/services/ai';
 
 const DAYS = [
   'Lundi',
@@ -34,11 +40,17 @@ export default function ValidatePlanScreen() {
   const { user, checkProfileComplete } = useAuth();
 
   const [currentPlan, setCurrentPlan] = useState<MealPlan | null>(
-    data.generatedPlan || null
+    data.generatedPlan || null,
   );
   const [loading, setLoading] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [regeneratingMeal, setRegeneratingMeal] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (data.generatedPlan && !currentPlan) {
+      setCurrentPlan(data.generatedPlan);
+    }
+  }, [data.generatedPlan]);
 
   const handleRegenerate = async () => {
     if (loading) {
@@ -75,54 +87,44 @@ export default function ValidatePlanScreen() {
         !profile.goal
       ) {
         console.log('🔴 [REGEN] Profil incomplet');
-        Alert.alert('Erreur', 'Données du profil invalides. Veuillez recommencer.');
+        Alert.alert(
+          'Erreur',
+          'Données du profil invalides. Veuillez recommencer.',
+        );
         return;
       }
 
       const dietLabel = profile.dietary_preferences?.diet_type || 'standard';
       const allergies = profile.dietary_preferences?.allergies || [];
       const mealsPerDay = profile.dietary_preferences?.meals_per_day || 3;
-      const allergiesText = allergies.length > 0 ? allergies.join(', ') : 'Aucune';
-      console.log(`📋 [REGEN] Régime: ${dietLabel}, Allergies: ${allergiesText}, Repas/jour: ${mealsPerDay}`);
+      const allergiesText =
+        allergies.length > 0 ? allergies.join(', ') : 'Aucune';
+      console.log(
+        `📋 [REGEN] Régime: ${dietLabel}, Allergies: ${allergiesText}, Repas/jour: ${mealsPerDay}`,
+      );
 
       setLoading(true);
       const varianceId = Date.now();
       console.log('🔢 [REGEN] Variance ID:', varianceId);
 
-      console.log('🤖 [REGEN] Appel Edge Function...');
-      const { data: planData, error } = await supabase.functions.invoke(
-        'generate-plan',
-        {
-          body: {
-            userProfile: profile,
-            user_id: user.id,
-            variance: varianceId,
-          },
-        }
-      );
-
-      if (error) {
-        console.error('🔴 [REGEN] Erreur Edge Function:', error);
-        throw new Error(error.message || 'Erreur lors de la régénération');
-      }
+      console.log('🤖 [REGEN] Génération du plan...');
+      const planData = await generateMealPlan(profile, user.id, varianceId);
 
       if (!planData) {
         console.error('🔴 [REGEN] Aucune donnée reçue');
         throw new Error('Aucune donnée reçue du générateur');
       }
 
-      if (planData.error) {
-        console.error('🔴 [REGEN] Erreur dans planData:', planData.error);
-        throw new Error(planData.error);
-      }
-
-      console.log('✅ [REGEN] Nouveau plan reçu! Jours:', planData.days?.length);
+      console.log(
+        '✅ [REGEN] Nouveau plan reçu! Jours:',
+        planData.days?.length,
+      );
       setCurrentPlan(planData as MealPlan);
     } catch (error: any) {
       console.error('🔴 [REGEN] Erreur fatale:', error);
       Alert.alert(
         'Erreur',
-        error.message || 'Une erreur est survenue lors de la régénération'
+        error.message || 'Une erreur est survenue lors de la régénération',
       );
     } finally {
       setLoading(false);
@@ -160,7 +162,7 @@ export default function ValidatePlanScreen() {
     } catch (error: any) {
       Alert.alert(
         'Erreur',
-        error.message || "Une erreur est survenue lors de l'enregistrement"
+        error.message || "Une erreur est survenue lors de l'enregistrement",
       );
     } finally {
       setAccepting(false);
@@ -194,7 +196,10 @@ export default function ValidatePlanScreen() {
       setCurrentPlan(updatedPlan);
     } catch (error: any) {
       console.error('🔴 [MEAL] Erreur:', error);
-      Alert.alert('Erreur', error.message || 'Impossible de régénérer le repas');
+      Alert.alert(
+        'Erreur',
+        error.message || 'Impossible de régénérer le repas',
+      );
     } finally {
       setRegeneratingMeal(null);
     }
@@ -220,7 +225,10 @@ export default function ValidatePlanScreen() {
 
   return (
     <SafeAreaView style={styles.wrapper} edges={['top', 'bottom']}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.header}>
           <Text style={styles.title}>Votre plan hebdomadaire</Text>
           <Text style={styles.subtitle}>
@@ -238,10 +246,16 @@ export default function ValidatePlanScreen() {
                 const mealKey = `${dayIndex}-${mealIndex}`;
                 const isRegenerating = regeneratingMeal === mealKey;
                 return (
-                  <View key={mealIndex} style={isRegenerating && styles.regeneratingMeal}>
+                  <View
+                    key={mealIndex}
+                    style={isRegenerating && styles.regeneratingMeal}
+                  >
                     {isRegenerating && (
                       <View style={styles.regeneratingOverlay}>
-                        <ActivityIndicator size="small" color={Colors.primary} />
+                        <ActivityIndicator
+                          size="small"
+                          color={Colors.primary}
+                        />
                       </View>
                     )}
                     <MealCard
@@ -249,7 +263,9 @@ export default function ValidatePlanScreen() {
                       mealName={meal.name}
                       calories={meal.calories}
                       ingredients={meal.ingredients}
-                      onRegenerate={() => handleRegenerateMeal(dayIndex, mealIndex)}
+                      onRegenerate={() =>
+                        handleRegenerateMeal(dayIndex, mealIndex)
+                      }
                     />
                   </View>
                 );

@@ -1,14 +1,15 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -16,16 +17,24 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const body = await req.json();
     const { user_id, userProfile, diet, allergies } = body;
 
-    const finalDiet = diet || userProfile?.dietary_preferences?.diet_type || userProfile?.diet || "standard";
-    const finalAllergies = allergies || userProfile?.dietary_preferences?.allergies || userProfile?.allergies || [];
+    const finalDiet =
+      diet ||
+      userProfile?.dietary_preferences?.diet_type ||
+      userProfile?.diet ||
+      'standard';
+    const finalAllergies =
+      allergies ||
+      userProfile?.dietary_preferences?.allergies ||
+      userProfile?.allergies ||
+      [];
     const mealsPerDay = userProfile?.dietary_preferences?.meals_per_day || 3;
     const userId = user_id || userProfile?.id;
 
@@ -33,9 +42,9 @@ Deno.serve(async (req: Request) => {
     let dailyGoals = userProfile?.daily_goals;
     if (!dailyGoals && userId) {
       const { data: profileData } = await supabase
-        .from("profiles")
-        .select("daily_goals")
-        .eq("id", userId)
+        .from('profiles')
+        .select('daily_goals')
+        .eq('id', userId)
         .maybeSingle();
       if (profileData?.daily_goals) {
         dailyGoals = profileData.daily_goals;
@@ -49,23 +58,28 @@ Deno.serve(async (req: Request) => {
 
     // Distribute calories across meals
     const breakfastCal = Math.round(targetCalories * 0.25);
-    const snackCal = mealsPerDay === 4 ? Math.round(targetCalories * 0.10) : 0;
-    const lunchCal = Math.round(targetCalories * (mealsPerDay === 4 ? 0.35 : 0.40));
+    const snackCal = mealsPerDay === 4 ? Math.round(targetCalories * 0.1) : 0;
+    const lunchCal = Math.round(
+      targetCalories * (mealsPerDay === 4 ? 0.35 : 0.4),
+    );
     const dinnerCal = targetCalories - breakfastCal - snackCal - lunchCal;
 
-    const mealTypesInstruction = mealsPerDay === 4
-      ? `4 repas: breakfast (${breakfastCal} kcal), snack (${snackCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`
-      : `3 repas: breakfast (${breakfastCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`;
+    const mealTypesInstruction =
+      mealsPerDay === 4
+        ? `4 repas: breakfast (${breakfastCal} kcal), snack (${snackCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`
+        : `3 repas: breakfast (${breakfastCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`;
 
-    console.log(`🚀 Start Gen - User: ${userId} - Diet: ${finalDiet} - Target: ${targetCalories} kcal`);
+    console.log(
+      `🚀 Start Gen - User: ${userId} - Diet: ${finalDiet} - Target: ${targetCalories} kcal`,
+    );
 
-    const models = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-pro-latest"];
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
     const systemPrompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
 
 PROFIL UTILISATEUR:
 - Régime: ${finalDiet}
-- Allergies: ${finalAllergies.length > 0 ? finalAllergies.join(", ") : "Aucune"}
+- Allergies: ${finalAllergies.length > 0 ? finalAllergies.join(', ') : 'Aucune'}
 
 OBJECTIFS NUTRITIONNELS QUOTIDIENS OBLIGATOIRES:
 - Calories: EXACTEMENT ${targetCalories} kcal par jour (±50 kcal toléré)
@@ -86,8 +100,12 @@ OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
     {
       "day_number": 1,
       "meals": [
-        { "type": "breakfast", "name": "...", "calories": ${breakfastCal}, "ingredients": ["..."], "macros": {"protein": 25, "carbs": 55, "fat": 12} }${mealsPerDay === 4 ? `,
-        { "type": "snack", "name": "...", "calories": ${snackCal}, "ingredients": ["..."], "macros": {"protein": 8, "carbs": 15, "fat": 3} }` : ""},
+        { "type": "breakfast", "name": "...", "calories": ${breakfastCal}, "ingredients": ["..."], "macros": {"protein": 25, "carbs": 55, "fat": 12} }${
+          mealsPerDay === 4
+            ? `,
+        { "type": "snack", "name": "...", "calories": ${snackCal}, "ingredients": ["..."], "macros": {"protein": 8, "carbs": 15, "fat": 3} }`
+            : ''
+        },
         { "type": "lunch", "name": "...", "calories": ${lunchCal}, "ingredients": ["..."], "macros": {"protein": 40, "carbs": 70, "fat": 18} },
         { "type": "dinner", "name": "...", "calories": ${dinnerCal}, "ingredients": ["..."], "macros": {"protein": 45, "carbs": 60, "fat": 22} }
       ]
@@ -96,14 +114,16 @@ OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
 }`;
 
     let response: Response | null = null;
-    let lastErr = "";
+    let lastErr = '';
     outer: for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       for (let attempt = 0; attempt < 3; attempt++) {
         const r = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contents: [{ parts: [{ text: systemPrompt }] }] }),
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: systemPrompt }] }],
+          }),
         });
         if (r.ok) {
           response = r;
@@ -118,37 +138,44 @@ OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
     }
 
     if (!response) {
-      throw new Error(`Gemini indisponible après plusieurs tentatives. Dernier: ${lastErr}`);
+      throw new Error(
+        `Gemini indisponible après plusieurs tentatives. Dernier: ${lastErr}`,
+      );
     }
 
     const data = await response.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
-    text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    text = text
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
     const planJson = JSON.parse(text);
 
     if (userId) {
-      await supabase.from("meal_plans").delete().eq("user_id", userId);
-      const { error } = await supabase.from("meal_plans").insert({
+      await supabase.from('meal_plans').delete().eq('user_id', userId);
+      const { error } = await supabase.from('meal_plans').insert({
         user_id: userId,
         plan_data: planJson,
         created_at: new Date().toISOString(),
       });
-      if (error) console.error("Erreur DB:", error);
-      else console.log("✅ Plan sauvegardé en DB !");
+      if (error) console.error('Erreur DB:', error);
+      else console.log('✅ Plan sauvegardé en DB !');
     }
 
     return new Response(JSON.stringify(planJson), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
-    console.error("❌ Erreur:", error);
+    console.error('❌ Erreur:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
+      }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      }
+      },
     );
   }
 });

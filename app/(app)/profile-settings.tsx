@@ -605,10 +605,12 @@ const styles = StyleSheet.create({
   },
   goalsGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Theme.spacing.sm,
   },
   goalCard: {
-    flex: 1,
+    flexBasis: '45%',
+    flexGrow: 1,
   },
   optionsGrid: {
     flexDirection: 'row',

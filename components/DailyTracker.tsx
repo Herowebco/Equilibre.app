@@ -29,23 +29,18 @@ function MacroBar({ label, current, goal, color }: MacroBarProps) {
 
   return (
     <View style={styles.macroItem}>
-      <View style={styles.macroHeader}>
-        <Text style={styles.macroLabel}>{label}</Text>
-        <Text style={styles.macroValue}>
-          {Math.round(current)}g / {Math.round(goal)}g
-        </Text>
-      </View>
+      <Text style={styles.macroLabel}>{label}</Text>
       <View style={styles.progressBarBackground}>
         <Animated.View
           style={[
             styles.progressBarFill,
-            {
-              width: widthInterpolate,
-              backgroundColor: color,
-            },
+            { width: widthInterpolate, backgroundColor: color },
           ]}
         />
       </View>
+      <Text style={styles.macroValue}>
+        {Math.round(current)}g / {Math.round(goal)}g
+      </Text>
     </View>
   );
 }
@@ -138,21 +133,17 @@ const styles = StyleSheet.create({
   },
   macroItem: {
     width: '100%',
-  },
-  macroHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Theme.spacing.xs,
+    gap: 4,
   },
   macroLabel: {
-    fontSize: Theme.fontSize.sm,
+    fontSize: Theme.fontSize.xs,
     fontWeight: Theme.fontWeight.medium,
     color: Colors.text.primary,
   },
   macroValue: {
     fontSize: Theme.fontSize.xs,
     color: Colors.text.secondary,
+    textAlign: 'right',
   },
   progressBarBackground: {
     width: '100%',

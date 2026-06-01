@@ -7,7 +7,6 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Theme } from '@/constants';
@@ -113,17 +112,18 @@ function SocialButton({ onPress, disabled, label, icon, flex, fullWidth }: Socia
 
   return (
     <TouchableOpacity
-      style={[styles.socialButtonWrapper, flex !== undefined && { flex }, fullWidth && styles.fullWidth]}
+      style={[
+        styles.socialButton,
+        styles.socialButtonFallback,
+        flex !== undefined && { flex },
+        fullWidth && styles.fullWidth,
+      ]}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.75}
     >
-      <BlurView intensity={60} tint="light" style={styles.blurContainer}>
-        <View style={styles.socialButtonInner}>
-          {icon}
-          <Text style={styles.socialButtonText}>{label}</Text>
-        </View>
-      </BlurView>
+      {icon}
+      <Text style={styles.socialButtonText}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -198,11 +198,6 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.md,
     borderWidth: 1,
     borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
   },
   socialButton: {},
   socialButtonText: {

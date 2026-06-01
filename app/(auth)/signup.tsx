@@ -14,22 +14,24 @@ import { Colors, Theme } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { z } from 'zod';
 
-const signupSchema = z.object({
-  fullName: z.string()
-    .min(2, 'Le nom doit contenir au moins 2 caractères'),
-  email: z.string()
-    .min(1, 'L\'email est requis')
-    .email('Format d\'email invalide'),
-  password: z.string()
-    .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
-    .regex(/[0-9]/, 'Le mot de passe doit contenir au moins 1 chiffre')
-    .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins 1 majuscule'),
-  confirmPassword: z.string()
-    .min(1, 'Veuillez confirmer votre mot de passe'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Les mots de passe ne correspondent pas',
-  path: ['confirmPassword'],
-});
+const signupSchema = z
+  .object({
+    fullName: z.string().min(2, 'Le nom doit contenir au moins 2 caractères'),
+    email: z
+      .string()
+      .min(1, "L'email est requis")
+      .email("Format d'email invalide"),
+    password: z
+      .string()
+      .min(8, 'Le mot de passe doit contenir au moins 8 caractères')
+      .regex(/[0-9]/, 'Le mot de passe doit contenir au moins 1 chiffre')
+      .regex(/[A-Z]/, 'Le mot de passe doit contenir au moins 1 majuscule'),
+    confirmPassword: z.string().min(1, 'Veuillez confirmer votre mot de passe'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Les mots de passe ne correspondent pas',
+    path: ['confirmPassword'],
+  });
 
 type FieldErrors = {
   fullName?: string;
@@ -78,13 +80,16 @@ export default function SignupScreen() {
     } catch (supabaseError: any) {
       const errorMessage = supabaseError?.message || '';
 
-      if (errorMessage.toLowerCase().includes('already registered') ||
-          errorMessage.toLowerCase().includes('already exists') ||
-          errorMessage.toLowerCase().includes('user already registered')) {
+      if (
+        errorMessage.toLowerCase().includes('already registered') ||
+        errorMessage.toLowerCase().includes('already exists') ||
+        errorMessage.toLowerCase().includes('user already registered')
+      ) {
         setFieldErrors({ email: 'Cet email possède déjà un compte.' });
       } else {
         setFieldErrors({
-          email: errorMessage || "Une erreur est survenue lors de l'inscription"
+          email:
+            errorMessage || "Une erreur est survenue lors de l'inscription",
         });
       }
     } finally {
@@ -98,7 +103,9 @@ export default function SignupScreen() {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      setFieldErrors({ email: err.message || 'Une erreur est survenue avec Google' });
+      setFieldErrors({
+        email: err.message || 'Une erreur est survenue avec Google',
+      });
     } finally {
       setLoading(false);
     }
@@ -112,7 +119,9 @@ export default function SignupScreen() {
       router.replace('/onboarding');
     } catch (err: any) {
       if (err.code !== 'ERR_REQUEST_CANCELED') {
-        setFieldErrors({ email: err.message || 'Une erreur est survenue avec Apple' });
+        setFieldErrors({
+          email: err.message || 'Une erreur est survenue avec Apple',
+        });
       }
     } finally {
       setLoading(false);
@@ -135,7 +144,10 @@ export default function SignupScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Nom complet</Text>
               <TextInput
-                style={[styles.input, fieldErrors.fullName && styles.inputError]}
+                style={[
+                  styles.input,
+                  fieldErrors.fullName && styles.inputError,
+                ]}
                 value={fullName}
                 onChangeText={setFullName}
                 placeholder="Jean Dupont"
@@ -146,7 +158,9 @@ export default function SignupScreen() {
                 editable={!loading}
               />
               {fieldErrors.fullName && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.fullName}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.fullName}
+                </Text>
               )}
             </View>
 
@@ -172,7 +186,10 @@ export default function SignupScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Mot de passe</Text>
               <TextInput
-                style={[styles.input, fieldErrors.password && styles.inputError]}
+                style={[
+                  styles.input,
+                  fieldErrors.password && styles.inputError,
+                ]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -184,14 +201,19 @@ export default function SignupScreen() {
                 editable={!loading}
               />
               {fieldErrors.password && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.password}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.password}
+                </Text>
               )}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirmer le mot de passe</Text>
               <TextInput
-                style={[styles.input, fieldErrors.confirmPassword && styles.inputError]}
+                style={[
+                  styles.input,
+                  fieldErrors.confirmPassword && styles.inputError,
+                ]}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 placeholder="••••••••"
@@ -203,12 +225,14 @@ export default function SignupScreen() {
                 editable={!loading}
               />
               {fieldErrors.confirmPassword && (
-                <Text style={styles.fieldErrorText}>{fieldErrors.confirmPassword}</Text>
+                <Text style={styles.fieldErrorText}>
+                  {fieldErrors.confirmPassword}
+                </Text>
               )}
             </View>
 
             <Button
-              title={loading ? "Création du compte..." : "S'inscrire"}
+              title={loading ? 'Création du compte...' : "S'inscrire"}
               onPress={handleSignup}
               loading={loading}
               disabled={loading}
@@ -239,7 +263,9 @@ export default function SignupScreen() {
               <Text style={styles.legalSeparator}>•</Text>
               <Link href="/confidentialite" asChild>
                 <TouchableOpacity>
-                  <Text style={styles.legalLink}>Politique de confidentialité</Text>
+                  <Text style={styles.legalLink}>
+                    Politique de confidentialité
+                  </Text>
                 </TouchableOpacity>
               </Link>
             </View>

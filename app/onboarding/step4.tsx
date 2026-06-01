@@ -33,7 +33,7 @@ const ALLERGIES = [
 export default function Step4Screen() {
   const router = useRouter();
   const { data, updateData, resetData } = useOnboarding();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const [dietType, setDietType] = useState<DietType>(data.diet_type || 'standard');
   const [allergies, setAllergies] = useState<string[]>(data.allergies || []);
@@ -108,7 +108,6 @@ export default function Step4Screen() {
         .from('profiles')
         .upsert({
           id: user.id,
-          email: userEmail,
           gender: finalData.gender,
           age: finalData.age,
           height: finalData.height,
@@ -142,6 +141,7 @@ export default function Step4Screen() {
           allergies: finalData.allergies,
           meals_per_day: finalData.meals_per_day,
         },
+        daily_goals: dailyGoals,
       };
 
       console.log('💾 [BOUTON] Sauvegarde dans AsyncStorage...');
@@ -177,7 +177,12 @@ export default function Step4Screen() {
       <View style={styles.container}>
         <LoadingPlanGenerator visible={generatingPlan} />
 
-        <ProgressBar currentStep={4} totalSteps={4} />
+        <View style={styles.topBar}>
+          <ProgressBar currentStep={4} totalSteps={4} />
+          <TouchableOpacity onPress={() => logout()} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Déconnexion</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.header}>
           <Text style={styles.title}>Préférences alimentaires</Text>
@@ -271,6 +276,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: Theme.spacing.lg,
+  },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Theme.spacing.md,
+    marginBottom: Theme.spacing.sm,
+  },
+  logoutButton: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: Theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  logoutText: {
+    fontSize: Theme.fontSize.xs,
+    color: Colors.text.secondary,
   },
   header: {
     marginBottom: Theme.spacing.xl,

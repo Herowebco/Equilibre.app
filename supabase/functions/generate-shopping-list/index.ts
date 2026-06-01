@@ -1,14 +1,15 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers':
+    'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
+  if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -16,44 +17,46 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const apiKey = Deno.env.get('GEMINI_API_KEY');
 
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
     const { planData, user_id } = await req.json();
 
     if (!planData || !planData.days) {
-      throw new Error("Plan de repas invalide");
+      throw new Error('Plan de repas invalide');
     }
 
     if (!user_id) {
-      throw new Error("User ID requis");
+      throw new Error('User ID requis');
     }
 
     const { data: existingPlan, error: fetchError } = await supabase
-      .from("meal_plans")
-      .select("shopping_list, id")
-      .eq("user_id", user_id)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
+      .from('meal_plans')
+      .select('shopping_list, id')
+      .eq('user_id', user_id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (fetchError) {
-      console.error("Erreur récupération plan:", fetchError);
+      console.error('Erreur récupération plan:', fetchError);
     }
 
     if (existingPlan?.shopping_list) {
-      console.log("✅ Liste de courses trouvée en cache");
+      console.log('✅ Liste de courses trouvée en cache');
       return new Response(JSON.stringify(existingPlan.shopping_list), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
     }
 
-    console.log(`🛍 Génération liste de courses pour ${planData.days.length} jours`);
+    console.log(
+      `🛍 Génération liste de courses pour ${planData.days.length} jours`,
+    );
 
     const systemPrompt = `
       Tu es un assistant ménager expert. Analyse ce plan de repas complet de 7 jours.
@@ -106,20 +109,20 @@ Deno.serve(async (req: Request) => {
       }
     `;
 
-    const models = ["gemini-flash-latest", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-pro-latest"];
-    let text = "";
-    let lastError = "";
+    const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+    let text = '';
+    let lastError = '';
 
     for (const model of models) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
       try {
         const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: systemPrompt }] }],
             generationConfig: {
-              responseMimeType: "application/json",
+              responseMimeType: 'application/json',
               temperature: 0.4,
             },
           }),
@@ -127,17 +130,19 @@ Deno.serve(async (req: Request) => {
 
         if (!response.ok) {
           lastError = await response.text();
-          console.warn(`Modèle ${model} a échoué (${response.status}): ${lastError.slice(0, 200)}`);
+          console.warn(
+            `Modèle ${model} a échoué (${response.status}): ${lastError.slice(0, 200)}`,
+          );
           continue;
         }
 
         const data = await response.json();
-        text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (text) {
           console.log(`Réponse obtenue via ${model}`);
           break;
         }
-        lastError = "Réponse vide";
+        lastError = 'Réponse vide';
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
         console.warn(`Erreur fetch ${model}: ${lastError}`);
@@ -145,12 +150,17 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!text) {
-      throw new Error(`Tous les modèles Gemini ont échoué. Dernière erreur: ${lastError}`);
+      throw new Error(
+        `Tous les modèles Gemini ont échoué. Dernière erreur: ${lastError}`,
+      );
     }
 
-    text = text.replace(/```json/gi, "").replace(/```/g, "").trim();
-    const firstBrace = text.indexOf("{");
-    const lastBrace = text.lastIndexOf("}");
+    text = text
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
     if (firstBrace !== -1 && lastBrace !== -1) {
       text = text.slice(firstBrace, lastBrace + 1);
     }
@@ -159,43 +169,50 @@ Deno.serve(async (req: Request) => {
     try {
       shoppingList = JSON.parse(text);
     } catch (parseError) {
-      console.error("Erreur parse JSON:", parseError, "Texte reçu:", text.slice(0, 500));
-      throw new Error("Réponse invalide du générateur");
+      console.error(
+        'Erreur parse JSON:',
+        parseError,
+        'Texte reçu:',
+        text.slice(0, 500),
+      );
+      throw new Error('Réponse invalide du générateur');
     }
 
     if (!shoppingList?.categories || !Array.isArray(shoppingList.categories)) {
-      throw new Error("Structure de la liste invalide");
+      throw new Error('Structure de la liste invalide');
     }
 
-    console.log(`✅ Liste générée avec ${shoppingList.categories?.length || 0} catégories`);
+    console.log(
+      `✅ Liste générée avec ${shoppingList.categories?.length || 0} catégories`,
+    );
 
     if (existingPlan?.id) {
       const { error: updateError } = await supabase
-        .from("meal_plans")
+        .from('meal_plans')
         .update({ shopping_list: shoppingList })
-        .eq("id", existingPlan.id);
+        .eq('id', existingPlan.id);
 
       if (updateError) {
-        console.error("Erreur sauvegarde liste:", updateError);
+        console.error('Erreur sauvegarde liste:', updateError);
       } else {
-        console.log("💾 Liste sauvegardée en cache");
+        console.log('💾 Liste sauvegardée en cache');
       }
     }
 
     return new Response(JSON.stringify(shoppingList), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
   } catch (error) {
-    console.error("❌ Erreur génération liste:", error);
+    console.error('❌ Erreur génération liste:', error);
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Erreur inconnue"
+        error: error instanceof Error ? error.message : 'Erreur inconnue',
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
-      }
+      },
     );
   }
 });

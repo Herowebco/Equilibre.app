@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Tabs, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { Hop as Home, Calendar, ShoppingCart, User } from 'lucide-react-native';
 import { Colors } from '@/constants';
@@ -35,7 +36,13 @@ export default function AppLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.text.light,
-        tabBarStyle: {
+        tabBarStyle: Platform.OS === 'web' ? {
+          backgroundColor: Colors.white,
+          borderTopColor: Colors.border,
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: 8,
+        } : {
           backgroundColor: Colors.white,
           borderTopColor: Colors.border,
           borderTopWidth: 1,

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { ScreenWrapper, Card, Button, DailyTracker, MealCard, WeightChart } from '@/components';
 import { Colors, Theme } from '@/constants';
@@ -12,7 +12,7 @@ import { generateShoppingList } from '@/services/ai';
 const DAYS_OF_WEEK = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 
 export default function DashboardScreen() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const { isFavorite, toggleFavorite } = useFavorites();
   const [loading, setLoading] = useState(true);
@@ -248,6 +248,9 @@ export default function DashboardScreen() {
               {dayName} - Jour {dayIndex + 1}
             </Text>
           </View>
+          <TouchableOpacity onPress={() => logout()} style={styles.logoutButton}>
+            <Text style={styles.logoutText}>Déconnexion</Text>
+          </TouchableOpacity>
         </View>
 
         <WeightChart />
@@ -312,6 +315,20 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Theme.spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  logoutButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: Theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  logoutText: {
+    fontSize: Theme.fontSize.sm,
+    color: Colors.text.secondary,
   },
   title: {
     fontSize: Theme.fontSize.xxl,
