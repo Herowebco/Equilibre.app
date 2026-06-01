@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { ScreenWrapper, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { supabase } from '@/lib/supabase';
@@ -30,9 +31,7 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const redirectTo = typeof window !== 'undefined'
-        ? `${window.location.origin}/reset-password`
-        : undefined;
+      const redirectTo = Linking.createURL('/reset-password');
 
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo,
@@ -42,7 +41,12 @@ export default function ForgotPasswordScreen() {
 
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message || 'Une erreur est survenue lors de l\'envoi du lien');
+      const msg: string = err.message || '';
+      if (msg.toLowerCase().includes('rate limit')) {
+        setError('Trop de demandes envoyées. Veuillez patienter quelques minutes avant de réessayer.');
+      } else {
+        setError(msg || "Une erreur est survenue lors de l'envoi du lien");
+      }
     } finally {
       setLoading(false);
     }
@@ -77,7 +81,7 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <ScreenWrapper scrollable>
+    <ScreenWrapper>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}

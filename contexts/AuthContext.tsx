@@ -12,6 +12,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   profileComplete: boolean;
+  isPasswordRecovery: boolean;
+  clearPasswordRecovery: () => void;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, fullName?: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -26,6 +28,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileComplete, setProfileComplete] = useState(false);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      return hash.includes('type=recovery') || search.includes('type=recovery');
+    }
+    return false;
+  });
+
+  const clearPasswordRecovery = () => setIsPasswordRecovery(false);
 
   const checkProfileComplete = async (): Promise<boolean> => {
     if (!user) return false;
@@ -73,6 +85,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          setIsPasswordRecovery(true);
+        }
         (async () => {
           if (session?.user) {
             const userData = {
@@ -258,6 +273,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: !!user,
         loading,
         profileComplete,
+        isPasswordRecovery,
+        clearPasswordRecovery,
         login,
         signup,
         signInWithGoogle,

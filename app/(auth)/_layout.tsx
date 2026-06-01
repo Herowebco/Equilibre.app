@@ -13,8 +13,9 @@ export default function AuthLayout() {
     if (loading) return;
 
     const inAuth = segments[0] === '(auth)';
+    const onResetPassword = segments[1] === 'reset-password';
 
-    if (isAuthenticated && inAuth) {
+    if (isAuthenticated && inAuth && !onResetPassword) {
       if (profileComplete) {
         router.replace('/(app)');
       } else {
@@ -27,6 +28,8 @@ export default function AuthLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" />
       <Stack.Screen name="signup" />
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-password" />
     </Stack>
   );
 }

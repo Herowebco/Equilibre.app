@@ -9,12 +9,14 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
+import { useAuth } from '@/contexts/AuthContext';
 import { ScreenWrapper, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { supabase } from '@/lib/supabase';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { clearPasswordRecovery } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,9 +25,20 @@ export default function ResetPasswordScreen() {
   const [isValidSession, setIsValidSession] = useState<boolean | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsValidSession(!!session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsValidSession(true);
+      } else if (event === 'SIGNED_IN' && session) {
+        setIsValidSession(true);
+      }
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) setIsValidSession(true);
+      else setIsValidSession(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleResetPassword = async () => {
@@ -54,6 +67,7 @@ export default function ResetPasswordScreen() {
 
       if (error) throw error;
 
+      clearPasswordRecovery();
       setSuccess(true);
 
       setTimeout(() => {
