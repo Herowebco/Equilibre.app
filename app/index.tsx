@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,10 +8,13 @@ export default function Index() {
   const { isAuthenticated, loading, profileComplete, isPasswordRecovery } = useAuth();
   const router = useRouter();
   const rootNavigationState = useRootNavigationState();
+  const hasNavigated = useRef(false);
 
   useEffect(() => {
     if (!rootNavigationState?.key) return;
     if (loading) return;
+    if (hasNavigated.current) return;
+    hasNavigated.current = true;
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/reset-password');

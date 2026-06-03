@@ -76,6 +76,7 @@ export default function SignupScreen() {
 
     try {
       await signup(email, password, fullName);
+      router.replace('/onboarding');
     } catch (supabaseError: any) {
       const errorMessage = supabaseError?.message || '';
 

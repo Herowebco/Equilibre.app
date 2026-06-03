@@ -34,6 +34,7 @@ export default function LoginScreen() {
 
     try {
       await login(email, password);
+      router.replace('/(app)');
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de la connexion');
     } finally {
