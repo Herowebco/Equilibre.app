@@ -179,9 +179,6 @@ export default function Step4Screen() {
 
         <View style={styles.topBar}>
           <ProgressBar currentStep={4} totalSteps={4} />
-          <TouchableOpacity onPress={() => logout()} style={styles.logoutButton}>
-            <Text style={styles.logoutText}>Déconnexion</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.header}>
@@ -282,17 +279,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Theme.spacing.md,
     marginBottom: Theme.spacing.sm,
-  },
-  logoutButton: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: Theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  logoutText: {
-    fontSize: Theme.fontSize.xs,
-    color: Colors.text.secondary,
   },
   header: {
     marginBottom: Theme.spacing.xl,
