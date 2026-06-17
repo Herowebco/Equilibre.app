@@ -30,7 +30,14 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/?type=recovery`
+        : undefined;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo ? { redirectTo } : {}
+      );
 
       if (error) throw error;
 

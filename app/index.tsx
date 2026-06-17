@@ -13,12 +13,16 @@ export default function Index() {
   useEffect(() => {
     if (!rootNavigationState?.key) return;
     if (loading) return;
-    if (hasNavigated.current) return;
-    hasNavigated.current = true;
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/reset-password');
-    } else if (isAuthenticated) {
+      return;
+    }
+
+    if (hasNavigated.current) return;
+    hasNavigated.current = true;
+
+    if (isAuthenticated) {
       if (profileComplete) {
         router.replace('/(app)');
       } else {
