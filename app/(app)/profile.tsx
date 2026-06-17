@@ -158,7 +158,7 @@ export default function ProfileScreen() {
             <Card style={styles.card}>
               <Text style={styles.sectionTitle}>Mot de passe</Text>
               <Text style={styles.oauthMessage}>
-                Vous êtes connecté via Google. La gestion du mot de passe se fait directement chez votre fournisseur d'authentification.
+                Vous êtes connecté via un compte social (Google ou Apple). La gestion du mot de passe se fait directement chez votre fournisseur d'authentification.
               </Text>
             </Card>
           )}
