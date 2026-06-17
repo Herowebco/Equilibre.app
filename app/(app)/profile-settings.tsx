@@ -9,13 +9,17 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenWrapper, Card, Button, SelectableCard, LoadingPlanGenerator } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { ArrowLeft, Save, CircleAlert as AlertCircle } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { generateMealPlan } from '@/services/ai';
+import { calculateDailyGoals } from '@/services/nutrition';
 
 interface ProfileData {
   age: number | null;
@@ -154,6 +158,21 @@ export default function ProfileSettingsScreen() {
     setSaving(true);
 
     try {
+      const goalMap: Record<string, 'lose_weight' | 'maintain' | 'gain_muscle'> = {
+        lose: 'lose_weight',
+        maintain: 'maintain',
+        gain: 'gain_muscle',
+      };
+
+      const updatedDailyGoals = calculateDailyGoals({
+        gender: (profileData.gender || 'male') as 'male' | 'female',
+        age: profileData.age || 30,
+        height: profileData.height || 170,
+        weight: profileData.weight || 70,
+        activity_level: (profileData.activity_level || 'moderate') as any,
+        goal: goalMap[profileData.goal || 'maintain'] || 'maintain',
+      });
+
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -165,6 +184,7 @@ export default function ProfileSettingsScreen() {
           activity_level: profileData.activity_level,
           goal: profileData.goal,
           dietary_preferences: profileData.dietary_preferences,
+          daily_goals: updatedDailyGoals,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -219,87 +239,71 @@ export default function ProfileSettingsScreen() {
   };
 
   const handleRegenerateNow = async () => {
-    console.log('🟢 [PROFILE-REGEN] Début régénération du plan');
     setShowRegenerationModal(false);
     setIsGenerating(true);
 
     try {
-      if (!user) {
-        throw new Error('Utilisateur non connecté');
-      }
+      if (!user) throw new Error('Utilisateur non connecté');
 
-      console.log('📋 [PROFILE-REGEN] Archive ancien plan');
-      const { error: archiveError } = await supabase
-        .from('meal_plans')
-        .update({ status: 'archived' })
-        .eq('user_id', user.id)
-        .eq('status', 'active');
+      const goalMap: Record<string, 'lose_weight' | 'maintain' | 'gain_muscle'> = {
+        lose: 'lose_weight',
+        maintain: 'maintain',
+        gain: 'gain_muscle',
+      };
 
-      if (archiveError) {
-        console.error('⚠️ [PROFILE-REGEN] Erreur archivage:', archiveError);
-      }
-
-      const varianceId = Date.now();
-      console.log('🔢 [PROFILE-REGEN] Variance ID:', varianceId);
-      console.log('🤖 [PROFILE-REGEN] Appel Edge Function avec profil:', {
-        gender: profileData.gender,
-        age: profileData.age,
-        height: profileData.height,
-        weight: profileData.weight,
-        goal: profileData.goal,
-        activity_level: profileData.activity_level,
+      const dailyGoals = calculateDailyGoals({
+        gender: (profileData.gender || 'male') as 'male' | 'female',
+        age: profileData.age || 30,
+        height: profileData.height || 170,
+        weight: profileData.weight || 70,
+        activity_level: (profileData.activity_level || 'moderate') as any,
+        goal: goalMap[profileData.goal || 'maintain'] || 'maintain',
       });
 
-      const { data: planData, error: generateError } = await supabase.functions.invoke(
-        'generate-plan',
-        {
-          body: {
-            userProfile: profileData,
-            user_id: user.id,
-            variance: varianceId,
-          },
-        }
-      );
+      const userProfileForGeneration = { ...profileData, daily_goals: dailyGoals };
 
-      if (generateError) {
-        console.error('🔴 [PROFILE-REGEN] Erreur Edge Function:', generateError);
-        throw new Error(generateError.message || 'Erreur lors de la génération');
+      if (Platform.OS === 'ios') {
+        // iOS: direct Gemini (doesn't save to DB) → archive old → insert new
+        await supabase
+          .from('meal_plans')
+          .update({ status: 'archived' })
+          .eq('user_id', user.id)
+          .eq('status', 'active');
+
+        const planData = await generateMealPlan(userProfileForGeneration, user.id, Date.now());
+
+        const { error: insertError } = await supabase.from('meal_plans').insert({
+          user_id: user.id,
+          plan_data: planData,
+          status: 'active',
+        });
+        if (insertError) throw insertError;
+      } else {
+        // Android/web: edge function handles delete + save internally
+        const { data, error: generateError } = await supabase.functions.invoke('generate-plan', {
+          body: { userProfile: userProfileForGeneration, user_id: user.id, variance: Date.now() },
+        });
+        if (generateError) throw new Error(generateError.message || 'Erreur lors de la génération');
+        if (!data || data.error) throw new Error(data?.error || 'Aucune donnée reçue');
+
+        // Edge function saves without status, update it to 'active'
+        await supabase
+          .from('meal_plans')
+          .update({ status: 'active' })
+          .eq('user_id', user.id)
+          .is('status', null);
       }
 
-      if (!planData || planData.error) {
-        console.error('🔴 [PROFILE-REGEN] Erreur planData:', planData?.error);
-        throw new Error(planData?.error || 'Aucune donnée reçue');
-      }
-
-      console.log('✅ [PROFILE-REGEN] Plan généré! Jours:', planData.days?.length);
-      console.log('💾 [PROFILE-REGEN] Sauvegarde du nouveau plan');
-
-      const { error: insertError } = await supabase.from('meal_plans').insert({
-        user_id: user.id,
-        plan_data: planData,
-        status: 'active',
-      });
-
-      if (insertError) {
-        console.error('🔴 [PROFILE-REGEN] Erreur sauvegarde:', insertError);
-        throw insertError;
-      }
-
-      console.log('✅ [PROFILE-REGEN] Plan sauvegardé avec succès!');
+      await AsyncStorage.removeItem(`shopping_checked_${user.id}`);
       setInitialData(profileData);
 
       setTimeout(() => {
-        console.log('🔄 [PROFILE-REGEN] Redirection vers le dashboard...');
         setIsGenerating(false);
         router.push('/(app)');
       }, 500);
     } catch (error: any) {
-      console.error('🔴 [PROFILE-REGEN] Erreur fatale:', error);
       setIsGenerating(false);
-      Alert.alert(
-        'Erreur',
-        error.message || 'Impossible de générer le nouveau plan. Veuillez réessayer.'
-      );
+      Alert.alert('Erreur', error.message || 'Impossible de générer le nouveau plan. Veuillez réessayer.');
     }
   };
 

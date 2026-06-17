@@ -107,7 +107,12 @@ export default function GroceriesScreen() {
           }
 
           setShoppingList(list);
+        } else {
+          setShoppingList(null);
         }
+      } else {
+        setCurrentPlan(null);
+        setShoppingList(null);
       }
     } catch (error) {
       console.error('Error loading shopping list:', error);
