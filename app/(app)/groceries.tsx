@@ -9,13 +9,14 @@ import {
   Animated,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScreenWrapper, Card, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { ShoppingCart, Check, Square, RefreshCw, ShoppingBasket } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import type { MealPlan, ShoppingList } from '@/services/ai';
-import { generateShoppingList, updateShoppingListItems } from '@/services/ai';
+import { generateShoppingList } from '@/services/ai';
 
 const LOADING_MESSAGES = [
   'Exploration de vos placards virtuels...',
@@ -69,6 +70,8 @@ export default function GroceriesScreen() {
     }
   }, [loading, generating]);
 
+  const getCheckedKey = () => `shopping_checked_${user?.id}`;
+
   const loadShoppingList = async () => {
     if (!user) return;
 
@@ -88,7 +91,22 @@ export default function GroceriesScreen() {
       if (data) {
         setCurrentPlan(data.plan_data as MealPlan);
         if (data.shopping_list) {
-          setShoppingList(data.shopping_list as ShoppingList);
+          const list = data.shopping_list as ShoppingList;
+
+          // Restore checked state from AsyncStorage
+          const savedChecked = await AsyncStorage.getItem(getCheckedKey());
+          if (savedChecked) {
+            const checkedMap: Record<string, boolean> = JSON.parse(savedChecked);
+            list.categories = list.categories.map(cat => ({
+              ...cat,
+              items: cat.items.map(item => ({
+                ...item,
+                checked: checkedMap[item.name] ?? item.checked,
+              })),
+            }));
+          }
+
+          setShoppingList(list);
         }
       }
     } catch (error) {
@@ -129,11 +147,14 @@ export default function GroceriesScreen() {
 
     setShoppingList(newShoppingList);
 
-    try {
-      await updateShoppingListItems(user.id, newShoppingList);
-    } catch (error) {
-      console.error('Error updating shopping list:', error);
-    }
+    // Persist checked state in AsyncStorage
+    const checkedMap: Record<string, boolean> = {};
+    newShoppingList.categories.forEach(cat => {
+      cat.items.forEach(item => {
+        if (item.checked) checkedMap[item.name] = true;
+      });
+    });
+    await AsyncStorage.setItem(getCheckedKey(), JSON.stringify(checkedMap));
   };
 
   const getTotalItems = (): number => {

@@ -12,6 +12,7 @@ interface MacroBarProps {
 
 function MacroBar({ label, current, goal, color }: MacroBarProps) {
   const progress = Math.min((current / goal) * 100, 100);
+  const isGoalReached = current > 0 && Math.abs(current - goal) / goal <= 0.1;
   const animatedWidth = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -27,6 +28,8 @@ function MacroBar({ label, current, goal, color }: MacroBarProps) {
     outputRange: ['0%', '100%'],
   });
 
+  const barColor = isGoalReached ? '#4CAF50' : color;
+
   return (
     <View style={styles.macroItem}>
       <Text style={styles.macroLabel}>{label}</Text>
@@ -34,12 +37,12 @@ function MacroBar({ label, current, goal, color }: MacroBarProps) {
         <Animated.View
           style={[
             styles.progressBarFill,
-            { width: widthInterpolate, backgroundColor: color },
+            { width: widthInterpolate, backgroundColor: barColor },
           ]}
         />
       </View>
-      <Text style={styles.macroValue}>
-        {Math.round(current)}g / {Math.round(goal)}g
+      <Text style={[styles.macroValue, isGoalReached && styles.macroValueSuccess]}>
+        {Math.round(current)}g / {Math.round(goal)}g{isGoalReached ? ' ✓' : ''}
       </Text>
     </View>
   );
@@ -144,6 +147,10 @@ const styles = StyleSheet.create({
     fontSize: Theme.fontSize.xs,
     color: Colors.text.secondary,
     textAlign: 'right',
+  },
+  macroValueSuccess: {
+    color: '#4CAF50',
+    fontWeight: Theme.fontWeight.medium,
   },
   progressBarBackground: {
     width: '100%',

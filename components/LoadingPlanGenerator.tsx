@@ -1,13 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-// Temporairement désactivé pour le débogage
-// import Animated, {
-//   useAnimatedStyle,
-//   useSharedValue,
-//   withRepeat,
-//   withTiming,
-//   withSequence,
-// } from 'react-native-reanimated';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { ChefHat } from 'lucide-react-native';
 import { Colors, Theme } from '@/constants';
 
@@ -15,56 +7,69 @@ const LOADING_MESSAGES = [
   'Analyse de vos préférences alimentaires...',
   'Calcul de vos besoins caloriques journaliers...',
   'Recherche de recettes saines et gourmandes...',
-  'Équilibrage des macronutriments (Protéines, Glucides, Lipides)...',
+  'Équilibrage des macronutriments...',
   'Ajustement des portions pour votre objectif...',
   'Dressage final de votre menu de la semaine !',
 ];
+
+// Durée totale estimée : 30 secondes → barre atteint 88% en 30s
+const TOTAL_DURATION_MS = 30000;
 
 interface LoadingPlanGeneratorProps {
   visible?: boolean;
 }
 
-export default function LoadingPlanGenerator({
-  visible = true,
-}: LoadingPlanGeneratorProps) {
+export default function LoadingPlanGenerator({ visible = true }: LoadingPlanGeneratorProps) {
   const [messageIndex, setMessageIndex] = useState(0);
-  // Temporairement désactivé pour le débogage
-  // const bounceValue = useSharedValue(0);
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible) {
+      setMessageIndex(0);
+      progressAnim.setValue(0);
+      return;
+    }
 
-    // Temporairement désactivé pour le débogage
-    // bounceValue.value = withRepeat(
-    //   withSequence(
-    //     withTiming(-10, { duration: 400 }),
-    //     withTiming(0, { duration: 400 })
-    //   ),
-    //   -1,
-    //   false
-    // );
+    // Barre indépendante : monte de 0 à 88% en 30s, jamais en arrière
+    Animated.timing(progressAnim, {
+      toValue: 88,
+      duration: TOTAL_DURATION_MS,
+      useNativeDriver: false,
+    }).start();
 
+    // Messages qui tournent indépendamment
     const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 2500);
+      setMessageIndex(prev => (prev + 1) % LOADING_MESSAGES.length);
+    }, 4000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      progressAnim.stopAnimation();
+    };
   }, [visible]);
 
-  // Temporairement désactivé pour le débogage
-  // const animatedStyle = useAnimatedStyle(() => ({
-  //   transform: [{ translateY: bounceValue.value }],
-  // }));
-
   if (!visible) return null;
+
+  const widthInterpolate = progressAnim.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
 
   return (
     <View style={styles.overlay}>
       <View style={styles.container}>
         <View style={styles.iconContainer}>
-          <ChefHat size={64} color={Colors.primary} strokeWidth={2} />
+          <ChefHat size={56} color={Colors.primary} strokeWidth={2} />
         </View>
+
+        <Text style={styles.title}>Génération en cours</Text>
         <Text style={styles.message}>{LOADING_MESSAGES[messageIndex]}</Text>
+
+        <View style={styles.progressTrack}>
+          <Animated.View style={[styles.progressFill, { width: widthInterpolate }]} />
+        </View>
+
+        <Text style={styles.hint}>Cela peut prendre 15 à 30 secondes</Text>
       </View>
     </View>
   );
@@ -77,7 +82,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
@@ -87,16 +92,40 @@ const styles = StyleSheet.create({
     borderRadius: Theme.borderRadius.lg,
     padding: Theme.spacing.xl,
     alignItems: 'center',
-    maxWidth: '80%',
+    width: '82%',
   },
   iconContainer: {
-    marginBottom: Theme.spacing.lg,
+    marginBottom: Theme.spacing.md,
+  },
+  title: {
+    fontSize: Theme.fontSize.lg,
+    fontWeight: Theme.fontWeight.bold,
+    color: Colors.text.primary,
+    marginBottom: Theme.spacing.sm,
   },
   message: {
-    fontSize: Theme.fontSize.md,
-    color: Colors.text.primary,
-    fontWeight: Theme.fontWeight.medium,
+    fontSize: Theme.fontSize.sm,
+    color: Colors.text.secondary,
     textAlign: 'center',
-    minHeight: 48,
+    minHeight: 40,
+    marginBottom: Theme.spacing.lg,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    backgroundColor: '#E8F5EE',
+    borderRadius: 100,
+    overflow: 'hidden',
+    marginBottom: Theme.spacing.sm,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.primary,
+    borderRadius: 100,
+  },
+  hint: {
+    fontSize: Theme.fontSize.xs,
+    color: Colors.text.light,
+    marginTop: Theme.spacing.xs,
   },
 });

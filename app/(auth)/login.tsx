@@ -7,8 +7,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
 import { ScreenWrapper, Button, SocialAuthButtons } from '@/components';
@@ -79,7 +77,6 @@ export default function LoginScreen() {
 
   return (
     <ScreenWrapper>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -173,7 +170,6 @@ export default function LoginScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
-      </TouchableWithoutFeedback>
     </ScreenWrapper>
   );
 }

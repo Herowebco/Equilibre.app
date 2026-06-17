@@ -47,21 +47,21 @@ export function calculateDailyGoals(profile: UserProfile): DailyGoals {
   switch (profile.goal) {
     case 'lose_weight':
       calories = tdee - 500;
-      proteinRatio = 0.35;
-      carbsRatio = 0.35;
+      proteinRatio = 0.25;
+      carbsRatio = 0.45;
       fatsRatio = 0.30;
       break;
     case 'gain_muscle':
       calories = tdee + 300;
-      proteinRatio = 0.30;
-      carbsRatio = 0.45;
+      proteinRatio = 0.25;
+      carbsRatio = 0.50;
       fatsRatio = 0.25;
       break;
     case 'maintain':
     default:
       calories = tdee;
-      proteinRatio = 0.30;
-      carbsRatio = 0.40;
+      proteinRatio = 0.20;
+      carbsRatio = 0.50;
       fatsRatio = 0.30;
       break;
   }

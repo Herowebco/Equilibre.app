@@ -34,6 +34,13 @@ export function MealCard({
   onToggleConsume,
   onToggleFavorite,
 }: MealCardProps) {
+  const MEAL_TYPE_FR: Record<string, string> = {
+    breakfast: 'Petit-déjeuner',
+    lunch: 'Déjeuner',
+    dinner: 'Dîner',
+    snack: 'Collation',
+  };
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpansion, setNeedsExpansion] = useState(false);
   const [optimisticFavorite, setOptimisticFavorite] = useState(isFavorite);
@@ -55,7 +62,7 @@ export function MealCard({
     <View style={[styles.mealItem, isConsumed && styles.mealItemConsumed]}>
       <View style={styles.mealHeader}>
         <View style={styles.mealInfo}>
-          <Text style={styles.mealType}>{mealType}</Text>
+          <Text style={styles.mealType}>{MEAL_TYPE_FR[mealType.toLowerCase()] ?? mealType}</Text>
           <Text style={styles.mealCalories}>{calories} kcal</Text>
         </View>
         <View style={styles.actionsContainer}>

@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useRouter, Link } from 'expo-router';
-import * as Linking from 'expo-linking';
 import { ScreenWrapper, Button } from '@/components';
 import { Colors, Theme } from '@/constants';
 import { supabase } from '@/lib/supabase';
@@ -31,11 +30,7 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const redirectTo = Linking.createURL('/reset-password');
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
 
       if (error) throw error;
 

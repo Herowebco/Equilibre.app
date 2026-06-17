@@ -109,7 +109,9 @@ async function generateMealPlanDirect(
       ? `4 repas: breakfast (${breakfastCal} kcal), snack (${snackCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`
       : `3 repas: breakfast (${breakfastCal} kcal), lunch (${lunchCal} kcal), dinner (${dinnerCal} kcal)`;
 
-  const prompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
+  const prompt = `Tu es nutritionniste expert francophone. Crée un plan alimentaire de 7 jours au format JSON STRICT.
+
+LANGUE OBLIGATOIRE: Tous les noms de repas et ingrédients DOIVENT être en FRANÇAIS. Aucun mot en anglais.
 
 PROFIL:
 - Régime: ${diet}
@@ -122,6 +124,7 @@ OBJECTIFS QUOTIDIENS:
 RÈGLES:
 1. ${mealsPerDay} repas/jour: ${mealTypesInstruction}
 2. Si Végétarien/Vegan = ZÉRO VIANDE/POISSON
+3. Noms de repas en français (ex: "Poulet grillé aux légumes" et NON "Grilled chicken")
 
 JSON UNIQUEMENT (sans markdown):
 {"days":[{"day_number":1,"meals":[{"type":"breakfast","name":"...","calories":${breakfastCal},"ingredients":["..."],"macros":{"protein":25,"carbs":55,"fat":12}}]}]}`;

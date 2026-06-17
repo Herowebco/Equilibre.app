@@ -75,7 +75,9 @@ Deno.serve(async (req: Request) => {
 
     const models = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
-    const systemPrompt = `Tu es nutritionniste expert. Crée un plan alimentaire de 7 jours au format JSON STRICT.
+    const systemPrompt = `Tu es nutritionniste expert francophone. Crée un plan alimentaire de 7 jours au format JSON STRICT.
+
+LANGUE OBLIGATOIRE: Tous les noms de repas et ingrédients DOIVENT être en FRANÇAIS. Aucun mot en anglais.
 
 PROFIL UTILISATEUR:
 - Régime: ${finalDiet}
@@ -93,6 +95,7 @@ RÈGLES ABSOLUES:
 3. Ajuste les portions pour atteindre exactement les calories cibles.
 4. Si Végétarien ou Vegan = ZÉRO VIANDE, ZÉRO POISSON.
 5. Chaque repas DOIT avoir des macros (protein, carbs, fat) réalistes.
+6. Noms de repas en français (ex: "Poulet grillé aux légumes" et NON "Grilled chicken").
 
 OUTPUT JSON UNIQUEMENT (sans markdown, sans explication):
 {
